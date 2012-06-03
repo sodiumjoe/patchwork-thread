@@ -1,4 +1,4 @@
-Node VMC Pusher: A Github Service Hook for Cloudfoundry
+AppFog Github Pusher: A Github Service Hook for AppFog
 =========================================================
 
 
@@ -7,44 +7,42 @@ Introduction
 
 4/22/12
 
-This is a github service hook application that works with cloudfoundry.
+This is a github service hook application that works with AppFog.
 
-It can be deployed as an application on cloudfoundry.com, and then
+It can be deployed as an application on appfog.com, and then
 that application can be listed as a service hook for a repository on
 github.com.  Then upon pushing to github, the service hook will be
-called and the application automatically deployed to cloudfoundry.com.
+called and the application automatically deployed to appfog.com.
 
 
 Instructions
 ------------
 
 The basic instructions involve setting up the application on
-cloudfoundry.com, setting CF authentication variables to the
+appfog.com, setting authentication variables to the
 application, then adding the servicehook to your github application.
 
 
-#### Step 1. Push the application into your cloudfoundry environment. 
+#### Step 1. Push the application into your appfog environment. 
 
-     vmc push node-vmc-pusher
+     af push appfog-github-pusher
 
 You will need to pick your own a unique name for the service hook.
 
-#### Step 2. Set the environment variables on the application so that it can login to your cloudfoundry account.  
+#### Step 2. Set the environment variables on the application so that it can login to your appfog account.  
 
-     vmc env-add node-vmc-pusher CF_TARGET=http://api.cloudfoundry.com
+     vmc env-add node-vmc-pusher CF_TARGET=https://api.appfog.com
      vmc env-add node-vmc-pusher CF_USER=<username>
      vmc env-add node-vmc-pusher CF_PWD=<password>
 
-#### Authorization: the code checks that the github pusher email address is the same as the cloudfoundry user specified.  Optionally you can whitelist other addresses to use the pusher.
+#### Authorization: the code checks that the github pusher email address is the same as the appfog user specified.  Optionally you can whitelist other addresses to use the pusher.
 
      vmc env-add node-vmc-pusher CF_WHITELIST=<emailaddress>,<emailaddress>
-
-In a future version of cloudfoundry, this mechanism will need to be re-written to use CF's oauth functionality.
 
 #### Step 3. Set the github service hook for your repository to this url.
 
      Repository -> Admin -> Service Hooks -> PostReceive URLs
-     http://node-vmc-pusher.cloudfoundry.com/pusher
+     http://node-vmc-pusher.aws.af.cm/pusher
 
 
 #### Step 4.  You are ready to go.  
@@ -52,7 +50,7 @@ In a future version of cloudfoundry, this mechanism will need to be re-written t
      git push <repository>
      vmc apps
 
-This will take the repository name as the application name and push that to cloudfoundry.com when pushed.
+This will take the repository name as the application name and push that to appfo.com when pushed.
 
 
 Notes
@@ -62,7 +60,7 @@ As of today, this service hook requires all assets (i.e., packages) to
 be part of the checked in repository. It is possible to modify this
 servicehook to try to stage packages into the repository as well
 during the execution of the hook, but because the package managers are
-not installed on cloudfoundry.com, this will require running the
+not installed on appfog.com, this will require running the
 application on a self hosted server.
 
 The fixtures needs a binary copy of git and a .fixtures/tmp/ directory

@@ -31,24 +31,24 @@ You will need to pick your own a unique name for the service hook.
 
 #### Step 2. Set the environment variables on the application so that it can login to your appfog account.  
 
-     vmc env-add node-vmc-pusher CF_TARGET=https://api.appfog.com
-     vmc env-add node-vmc-pusher CF_USER=<username>
-     vmc env-add node-vmc-pusher CF_PWD=<password>
+     af env-add appfog-github-pusher CF_TARGET=https://api.appfog.com
+     af env-add appfog-github-pusher CF_USER=<username>
+     af env-add appfog-github-pusher CF_PWD=<password>
 
 #### Authorization: the code checks that the github pusher email address is the same as the appfog user specified.  Optionally you can whitelist other addresses to use the pusher.
 
-     vmc env-add node-vmc-pusher CF_WHITELIST=<emailaddress>,<emailaddress>
+     af env-add appfog-github-pusher CF_WHITELIST=<emailaddress>,<emailaddress>
 
 #### Step 3. Set the github service hook for your repository to this url.
 
      Repository -> Admin -> Service Hooks -> PostReceive URLs
-     http://node-vmc-pusher.aws.af.cm/pusher
+     http://appfog-github-pusher.aws.af.cm/pusher
 
 
 #### Step 4.  You are ready to go.  
 
      git push <repository>
-     vmc apps
+     af apps
 
 This will take the repository name as the application name and push that to appfo.com when pushed.
 

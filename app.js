@@ -18,6 +18,18 @@ app.configure(function(){
 	app.use(express.logger());
 });
 
+app.get('/test-push', function(req, res){
+	console.log('testing push');
+    res.send('hi');
+	var cmd = "cd fixtures; ls; chmod +x git; rm -rf afdocs-test;" + "./git clone git@github.com:joebadmo/afdocs-test.git" + "; ls; cd ..";
+	
+	var child = exec(cmd, function(err, stdout, stderr) {
+		console.log(stdout);
+		console.log(stderr);
+	    });
+
+
+});
 
 app.post('/pusher', function(req, res){
     console.log('post received');

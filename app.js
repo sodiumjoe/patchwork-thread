@@ -1,5 +1,6 @@
 var express = require('express');
 var app = express.createServer();
+app.use(express.logger());
 var util = require('util')
 var exec = require('child_process').exec;
 
@@ -19,7 +20,7 @@ app.configure(function(){
     app.use(express.methodOverride());
     app.use(express.bodyParser());
     app.use(app.router);
-    app.use(express.static(__dirname + '/public'));
+	app.use(express.logger());
 });
 
 

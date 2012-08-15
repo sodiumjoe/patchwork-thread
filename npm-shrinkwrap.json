@@ -1,0 +1,57 @@
+{
+  "name": "node-vmc-pusher",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": {
+      "version": "2.5.9",
+      "dependencies": {
+        "connect": {
+          "version": "1.8.6",
+          "dependencies": {
+            "formidable": {
+              "version": "1.0.9"
+            }
+          }
+        },
+        "mime": {
+          "version": "1.2.4"
+        },
+        "qs": {
+          "version": "0.4.2"
+        },
+        "mkdirp": {
+          "version": "0.3.0"
+        }
+      }
+    },
+    "vmcjs": {
+      "version": "0.1.8",
+      "dependencies": {
+        "async": {
+          "version": "0.1.18"
+        }
+      }
+    },
+    "assert": {
+      "version": "0.4.9",
+      "dependencies": {
+        "util": {
+          "version": "0.4.9",
+          "dependencies": {
+            "events.node": {
+              "version": "0.4.9"
+            }
+          }
+        }
+      }
+    },
+    "util": {
+      "version": "0.4.9",
+      "dependencies": {
+        "events.node": {
+          "version": "0.4.9"
+        }
+      }
+    }
+  }
+}

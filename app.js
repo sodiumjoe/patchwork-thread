@@ -3,51 +3,13 @@ var express = require('express');
 var app = express.createServer();
 app.use(express.logger());
 var fs = require('fs');
+var searchifyURL = "http://:h9Cg6smI4vpB51@d68nx.api.searchify.com";
 
 app.configure(function(){
     app.use(express.methodOverride());
     app.use(express.bodyParser());
     app.use(app.router);
 	app.use(express.logger());
-});
-
-app.post('/pusher', function(req, res){
-    console.log('post received');
-    try {
-	p = req.body.payload;
-
-	console.log(p);
-
-	obj = JSON.parse(p);
-	obj.repository.url = obj.repository.url.replace("https", "git") + ".git"
-	console.log(obj.repository.url + " " + obj.repository.name);
-
-	console.log(obj.pusher.email + " vs. " + user);
-
-        if (obj.pusher.email != user) {	
-	    if (typeof whitelist == 'undefined') {
-		// exit here
-		console.log(obj.pusher.email + " doesn't match " + user + ". not authorized to push");
-		res.send('Not authorized to push.');	
-		return;
-	    } else {
-			if (whitelist.indexOf(obj.pusher.email) == -1) {
-				console.log(obj.pusher.email + " not in whitelist: " + whitelist + ". not authorized to push");
-				res.send('Not authorized to push.');	
-				return;
-			} else {
-				console.log(obj.pusher.email + " in whitelist: " + whitelist + ". valid to push");
-			}
-	    }
-	} else {
-		console.log(obj.pusher.email + " matches " + user + ". valid to push");
-	}
-
-    } catch (err) {
-	console.log("Error:", err);
-    }
-
-    res.send('Done with post');	
 });
 
 app.get('/index', function(req, res){

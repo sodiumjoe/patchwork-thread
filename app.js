@@ -1,34 +1,14 @@
+var github = require('octonode');
 var express = require('express');
 var app = express.createServer();
 app.use(express.logger());
-var util = require('util')
-var exec = require('child_process').exec;
-
-var assert = require('assert');
-var vmcjs = require('vmcjs');
-
 var fs = require('fs');
-
-function puts(error, stdout, stderr) { util.puts(stdout) }
 
 app.configure(function(){
     app.use(express.methodOverride());
     app.use(express.bodyParser());
     app.use(app.router);
 	app.use(express.logger());
-});
-
-app.get('/test-push', function(req, res){
-	console.log('testing push');
-    res.send('hi');
-	var cmd = "cd fixtures; ls; chmod +x git; rm -rf afdocs-test;" + "./git clone git@github.com:joebadmo/afdocs-test.git" + "; ls; cd ..";
-	
-	var child = exec(cmd, function(err, stdout, stderr) {
-		console.log(stdout);
-		console.log(stderr);
-	    });
-
-
 });
 
 app.post('/pusher', function(req, res){
@@ -51,33 +31,17 @@ app.post('/pusher', function(req, res){
 		res.send('Not authorized to push.');	
 		return;
 	    } else {
-		if (whitelist.indexOf(obj.pusher.email) == -1) {
-		    console.log(obj.pusher.email + " not in whitelist: " + whitelist + ". not authorized to push");
-		    res.send('Not authorized to push.');	
-		    return;
-		} else {
-		    console.log(obj.pusher.email + " in whitelist: " + whitelist + ". valid to push");
-		}
+			if (whitelist.indexOf(obj.pusher.email) == -1) {
+				console.log(obj.pusher.email + " not in whitelist: " + whitelist + ". not authorized to push");
+				res.send('Not authorized to push.');	
+				return;
+			} else {
+				console.log(obj.pusher.email + " in whitelist: " + whitelist + ". valid to push");
+			}
 	    }
 	} else {
 		console.log(obj.pusher.email + " matches " + user + ". valid to push");
 	}
-
-	
-
-	var cmd = "cd fixtures; ls; chmod +x git; rm -rf " + obj.repository.name + "; ./git clone " + obj.repository.url +"; ls; cd ..";
-
-	console.log(cmd);
-
-	var child = exec(cmd, function(err, stdout, stderr) {
-		//console.log(stdout);
-		//console.log(stderr);
-		if (err) throw err;
-		else {
-		    console.log('successful clone');
-		} 
-	    });
-
 
     } catch (err) {
 	console.log("Error:", err);
@@ -86,16 +50,60 @@ app.post('/pusher', function(req, res){
     res.send('Done with post');	
 });
 
+app.get('/index', function(req, res){
+    console.log('index request received');
+	var client = github.client();
+	var ghrepo = client.repo('joebadmo/afdocs-test');
+	var parsedContent = 0;
+	var rootPath = '/';
 
-app.get('/pusher', function(req, res){
-    console.log('get received');
-    console.log(req);
-    res.send('Done with get'); 
+	parsePath( rootPath, ghrepo, function( objIndex ){
+		console.log( objIndex );
+		res.send( 'done' );
+	});
 });
 
-app.get('/', function(req, res) {
-	res.send('Hello from Cloud Foundry');
-    });
+function parsePath(path, ghrepo, callback) {
+	var objectIndex = [];
+	ghrepo.contents(path, function (err, data) {
 
+		for ( i = 0; i < data.length; i++ ) {
+
+			// ignore dotfiles
+			if ( data[i].path[0] !== '.' ) {
+
+				if ( data[i].type === 'file' ) {
+
+					parseContent( data[i].path, ghrepo, function ( fileObj ) {
+						objectIndex.push( fileObj );
+					});
+						console.log( objectIndex );
+
+				} else if ( data[i].type === 'dir' ) {
+
+					parsePath( data[i].path, ghrepo, function(dirIndex){
+						objectIndex.push.apply(objectIndex, dirIndex);
+					});
+
+				}
+
+			}
+		}
+		callback(objectIndex);
+	});
+}
+
+function parseContent ( path, ghrepo, callback ) {
+
+	ghrepo.contents( path, function ( err, data ){
+		var tempObj = {
+			path: data.path,
+			//content: data.content,
+			name: data.name
+		};
+		callback ( tempObj );
+	});
+
+}
 
 app.listen(process.env.VCAP_APP_PORT || 3000);

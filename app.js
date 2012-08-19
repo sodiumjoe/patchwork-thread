@@ -1,3 +1,5 @@
+var yaml = require('yamlparser');
+var restify = require('restify');
 var github = require('octonode');
 var express = require('express');
 var app = express.createServer();
@@ -20,7 +22,7 @@ app.get('/index', function(req, res){
 	var rootPath = '/';
 
 	parsePath( rootPath, ghrepo, function( objIndex ){
-		console.log( objIndex );
+		//console.log( objIndex );
 		res.send( 'done' );
 	});
 });
@@ -37,14 +39,13 @@ function parsePath(path, ghrepo, callback) {
 				if ( data[i].type === 'file' ) {
 
 					parseContent( data[i].path, ghrepo, function ( fileObj ) {
-						objectIndex.push( fileObj );
+						console.log( fileObj  );
 					});
-						console.log( objectIndex );
 
 				} else if ( data[i].type === 'dir' ) {
 
 					parsePath( data[i].path, ghrepo, function(dirIndex){
-						objectIndex.push.apply(objectIndex, dirIndex);
+						//console.log( dirIndex );
 					});
 
 				}
@@ -58,13 +59,42 @@ function parsePath(path, ghrepo, callback) {
 function parseContent ( path, ghrepo, callback ) {
 
 	ghrepo.contents( path, function ( err, data ){
-		var tempObj = {
-			path: data.path,
-			//content: data.content,
-			name: data.name
+
+		var tempObj = yamlFront((new Buffer(data.content, 'base64').toString('ascii'))); 
+		/*var tempObj2 = {
+			name: tempObj.attributes.title,
+			path: data.path.replace(".markdown","").replace("index",""),
+			content: tempObj.body
 		};
-		callback ( tempObj );
+		callback ( tempObj2 );*/
 	});
+
+}
+
+function yamlFront ( input ) {
+	//regex to find yaml front matter
+	var regex = /^-{3}([\w\W]+)(-{3})([\w\W]*)*/;
+	var match = regex.exec( input );
+	var yamlString = match[2].replace(/^\s+|\s+$/g, '');
+    var attributes = yaml.eval(yamlString);
+	var body = input.replace(match[0], '');
+	console.log ( "attributes: ");
+ 	console.log ( attributes );
+	console.log ( "body: ");
+	console.log (  body );
+}
+
+function indexDoc ( ) {
+	var client = restify.createJsonClient({
+		url: 'http://:h9Cg6smI4vpB51@d68nx.api.searchify.com'
+	});
+
+	client.put('/v1/indexes/idx/docs', {docid: "test", fields: {text: "The sum of the length of each field value MUST not be greater than 100kbytes"}}, function(err, req, res, obj) {
+
+	  console.log(JSON.stringify(obj, null, 2));
+	});
+
+	res.send( 'done' );
 
 }
 

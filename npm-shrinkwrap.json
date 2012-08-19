@@ -1,0 +1,36 @@
+{
+  "name": "node-vmc-pusher",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": {
+      "version": "2.5.9",
+      "dependencies": {
+        "connect": {
+          "version": "1.8.6",
+          "dependencies": {
+            "formidable": {
+              "version": "1.0.9"
+            }
+          }
+        },
+        "mime": {
+          "version": "1.2.4"
+        },
+        "qs": {
+          "version": "0.4.2"
+        },
+        "mkdirp": {
+          "version": "0.3.0"
+        }
+      }
+    },
+    "octonode": {
+      "version": "0.2.3",
+      "dependencies": {
+        "request": {
+          "version": "2.9.203"
+        }
+      }
+    }
+  }
+}

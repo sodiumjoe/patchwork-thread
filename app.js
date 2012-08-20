@@ -1,11 +1,16 @@
 var yaml = require('yamlparser');
+var request = require('request');
+var Converter = require("./lib/pagedown/Markdown.Converter").Converter;
+var converter = new Converter();
 var restify = require('restify');
 var github = require('octonode');
 var express = require('express');
 var app = express.createServer();
 app.use(express.logger());
 var fs = require('fs');
-var searchifyURL = "http://:h9Cg6smI4vpB51@d68nx.api.searchify.com";
+var searchifyURL = process.env.SEARCHIFY_PRIVATE_API_URL;
+var client = github.client();
+var ghrepo = client.repo('joebadmo/afdocs-test');
 
 app.configure(function(){
     app.use(express.methodOverride());
@@ -16,8 +21,6 @@ app.configure(function(){
 
 app.get('/index', function(req, res){
     console.log('index request received');
-	var client = github.client();
-	var ghrepo = client.repo('joebadmo/afdocs-test');
 	var parsedContent = 0;
 	var rootPath = '/';
 
@@ -39,7 +42,7 @@ function parsePath(path, ghrepo, callback) {
 				if ( data[i].type === 'file' ) {
 
 					parseContent( data[i].path, ghrepo, function ( fileObj ) {
-						console.log( fileObj  );
+						//indexDoc( fileObj );
 					});
 
 				} else if ( data[i].type === 'dir' ) {
@@ -58,43 +61,54 @@ function parsePath(path, ghrepo, callback) {
 
 function parseContent ( path, ghrepo, callback ) {
 
-	ghrepo.contents( path, function ( err, data ){
+	var rawHeader = { Accept: 'application/vnd.github.beta.raw+json' };
+	var fullPath = "https://api.github.com/repos/joebadmo/afdocs-test/contents/" + path;
+	var options = {
+		uri: fullPath,
+		headers: rawHeader
+	};
 
-		var tempObj = yamlFront((new Buffer(data.content, 'base64').toString('ascii'))); 
-		/*var tempObj2 = {
-			name: tempObj.attributes.title,
-			path: data.path.replace(".markdown","").replace("index",""),
-			content: tempObj.body
+	request( options, function (error, rawContent, body) {
+
+		var tempObj = yamlFront( rawContent.body );//(new Buffer(data.content, 'base64').toString('ascii'))); 
+		var parsedObj = {
+			title: tempObj.attributes.title,
+			path: path.replace(".markdown","").replace("index",""),
+			content: converter.makeHtml( tempObj.body )
 		};
-		callback ( tempObj2 );*/
-	});
+
+		console.log( rawContent.body );
+		callback ( parsedObj );
+
+	});	
+	
+
 
 }
 
 function yamlFront ( input ) {
 	//regex to find yaml front matter
-	var regex = /^-{3}([\w\W]+)(-{3})([\w\W]*)*/;
+	var regex = /^\s*---[\s\S]+?---\s*/gi;
 	var match = regex.exec( input );
-	var yamlString = match[2].replace(/^\s+|\s+$/g, '');
-    var attributes = yaml.eval(yamlString);
-	var body = input.replace(match[0], '');
-	console.log ( "attributes: ");
- 	console.log ( attributes );
-	console.log ( "body: ");
-	console.log (  body );
+	var yamlString = match[0];
+    var attributes = yaml.eval( yamlString );
+	var body = input.replace( match[0], '' );
+	if ( body.length === 0 ) { body = "hello"; }
+	var parsedObj = {
+		attributes: attributes,
+		body: body
+	};
+	return parsedObj;
+
 }
 
-function indexDoc ( ) {
+function indexDoc ( fileObj ) {
 	var client = restify.createJsonClient({
-		url: 'http://:h9Cg6smI4vpB51@d68nx.api.searchify.com'
+		url: searchifyURL
 	});
 
-	client.put('/v1/indexes/idx/docs', {docid: "test", fields: {text: "The sum of the length of each field value MUST not be greater than 100kbytes"}}, function(err, req, res, obj) {
-
-	  console.log(JSON.stringify(obj, null, 2));
+	client.put('/v1/indexes/idx/docs', {docid: fileObj.path, fields: { text: fileObj.content, title: fileObj.title } }, function(err, req, res, obj) {
 	});
-
-	res.send( 'done' );
 
 }
 

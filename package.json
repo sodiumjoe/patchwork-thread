@@ -1,10 +1,11 @@
 {
- "name":"node-vmc-pusher",
+ "name":"afdocs-seachify-indexer",
   "version":"0.0.1",
   "dependencies":{
       "express":"",
 	  "octonode":"",
 	  "restify":"",
-	  "yaml-front-matter":""
+	  "request":"",
+	  "yamlparser":""
   }
 }

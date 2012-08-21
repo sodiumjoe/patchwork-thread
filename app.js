@@ -21,17 +21,12 @@ app.configure(function(){
 
 app.get('/index', function(req, res){
     console.log('index request received');
-	var parsedContent = 0;
 	var rootPath = '/';
 
-	parsePath( rootPath, ghrepo, function( objIndex ){
-		//console.log( objIndex );
-		res.send( 'done' );
-	});
+	parsePath( rootPath, ghrepo );
 });
 
-function parsePath(path, ghrepo, callback) {
-	var objectIndex = [];
+function parsePath( path, ghrepo ) {
 	ghrepo.contents(path, function (err, data) {
 
 		for ( i = 0; i < data.length; i++ ) {
@@ -47,24 +42,21 @@ function parsePath(path, ghrepo, callback) {
 
 				} else if ( data[i].type === 'dir' ) {
 
-					parsePath( data[i].path, ghrepo, function(dirIndex){
-						//console.log( dirIndex );
-					});
+					parsePath( data[i].path, ghrepo );
 
 				}
 
 			}
 		}
-		callback(objectIndex);
 	});
 }
 
 function parseContent ( path, ghrepo, callback ) {
 
 	var rawHeader = { Accept: 'application/vnd.github.beta.raw+json' };
-	var fullPath = "https://api.github.com/repos/joebadmo/afdocs-test/contents/" + path;
+	var rawPath = "https://api.github.com/repos/joebadmo/afdocs-test/contents/" + path;
 	var options = {
-		uri: fullPath,
+		uri: rawPath,
 		headers: rawHeader
 	};
 

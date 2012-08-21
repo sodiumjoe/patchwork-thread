@@ -19,37 +19,37 @@ app.configure(function(){
 	app.use(express.logger());
 });
 
-
 app.post('/pusher', function(req, res){
     console.log('post received');
     try {
-	p = req.body.payload;
-	console.log(p);
+		p = req.body.payload;
+		console.log(p);
 
-	var obj = JSON.parse(p);
+		var obj = JSON.parse(p);
 
-	var lastCommit = obj.commits[ obj.commits.length - 1 ];
-	
-	console.log( "Last commit: \n" + lastCommit.id );
+		var lastCommit = obj.commits[ obj.commits.length - 1 ];
+		
+		console.log( "Last commit: \n" + lastCommit.id );
 
-	var updates = lastCommit.added.concat( lastCommit.modified );
+		var updates = lastCommit.added.concat( lastCommit.modified );
 
-	console.log ( "Added or modified: \n " + updates );
+		var removed = lastCommit.removed;
 
-	var removed = lastCommit.removed;
+		console.log ( "Updating: \n " + updates.toString() );
+		for ( i = 0; i < updates.length; i++ ) {
+			parseContent( updates[i], ghrepo, function ( fileObj ) {
+				console.log ( "Added or modified: \n" );
+				indexDoc( fileObj );
+			});
+		}
 
-	console.log ( "Removed: \n " + removed );
-
-	for ( i = 0; i < updates.length; i++ ) {
-		parseContent( updates[i], ghrepo, function ( fileObj ) {
-			indexDoc( fileObj );
-		});
-	}
-
-	// delete removed index docs
+		console.log ( "Removing: \n " + removed );
+		for ( i = 0; i < removed.length; i++ ) {
+			deindexDoc( removed[i].replace(".markdown","").replace("index","") );
+		}
 
     } catch (err) {
-	console.log("Error:", err);
+		console.log("Error:", err);
     }
 
     res.send('Done with post');	
@@ -73,9 +73,7 @@ function parsePath( path, ghrepo ) {
 
 				if ( data[i].type === 'file' ) {
 
-					parseContent( data[i].path, ghrepo, function ( fileObj ) {
-						indexDoc( fileObj );
-					});
+					parseContent( data[i].path, ghrepo );
 
 				} else if ( data[i].type === 'dir' ) {
 
@@ -88,7 +86,7 @@ function parsePath( path, ghrepo ) {
 	});
 }
 
-function parseContent ( path, ghrepo, callback ) {
+function parseContent ( path, ghrepo ) {
 
 	var rawHeader = { Accept: 'application/vnd.github.beta.raw+json' };
 	var rawPath = "https://api.github.com/repos/joebadmo/afdocs-test/contents/" + path;
@@ -99,14 +97,14 @@ function parseContent ( path, ghrepo, callback ) {
 
 	request( options, function (error, rawContent, body) {
 
-		var tempObj = yamlFront( rawContent.body );//(new Buffer(data.content, 'base64').toString('ascii'))); 
+		var tempObj = yamlFront( rawContent.body );
 		var parsedObj = {
 			title: tempObj.attributes.title,
 			path: path.replace(".markdown","").replace("index",""),
 			content: converter.makeHtml( tempObj.body )
 		};
 
-		callback ( parsedObj );
+		indexDoc ( parsedObj );
 
 	});	
 }
@@ -115,7 +113,12 @@ function yamlFront ( input ) {
 	//regex to find yaml front matter
 	var regex = /^\s*---[\s\S]+?---\s*/gi;
 	var match = regex.exec( input );
-	var yamlString = match[0];
+	var yamlString = "";
+	if ( match !== null ) {
+		yamlString = match[0];
+	} else {
+		yamlString = '';
+	}
     var attributes = yaml.eval( yamlString );
 	var body = input.replace( match[0], '' );
 	if ( body.length === 0 ) { body = "hello"; }
@@ -128,15 +131,34 @@ function yamlFront ( input ) {
 }
 
 function indexDoc ( fileObj ) {
-	/*var client = restify.createJsonClient({
+	var client = restify.createJsonClient({
 		url: searchifyURL
 	});
-
-
 	client.put('/v1/indexes/idx/docs', {docid: fileObj.path, fields: { text: fileObj.content, title: fileObj.title } }, function(err, req, res, obj) {
-	});*/
+	});
 	console.log( "Indexed " + fileObj.path );
+}
 
+function deindexDoc ( path ) {
+
+	var options = {
+		uri: searchifyURL,
+		method: 'DELETE',
+		qs: { q: path }
+	};
+
+	var delPath = '/v1/indexes/idx/docs/?q=' + path;
+
+	client.del( delPath, function(err, req, res) {
+		console.log( err );
+		console.log( req );
+		console.log( res );
+	});
+/*
+	request( options, function (error, response, body) {
+		console.log( error );
+		console.log( response );
+	});	*/
 }
 
 app.listen(process.env.VCAP_APP_PORT || 3000);

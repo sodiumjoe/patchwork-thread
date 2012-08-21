@@ -128,13 +128,13 @@ function yamlFront ( input ) {
 }
 
 function indexDoc ( fileObj ) {
-	var client = restify.createJsonClient({
+	/*var client = restify.createJsonClient({
 		url: searchifyURL
 	});
 
 
-	//client.put('/v1/indexes/idx/docs', {docid: fileObj.path, fields: { text: fileObj.content, title: fileObj.title } }, function(err, req, res, obj) {
-	//});
+	client.put('/v1/indexes/idx/docs', {docid: fileObj.path, fields: { text: fileObj.content, title: fileObj.title } }, function(err, req, res, obj) {
+	});*/
 	console.log( "Indexed " + fileObj.path );
 
 }

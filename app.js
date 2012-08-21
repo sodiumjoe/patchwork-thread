@@ -19,6 +19,42 @@ app.configure(function(){
 	app.use(express.logger());
 });
 
+
+app.post('/pusher', function(req, res){
+    console.log('post received');
+    try {
+	p = req.body.payload;
+	console.log(p);
+
+	var obj = JSON.parse(p);
+
+	var lastCommit = obj.commits[ obj.commits.length - 1 ];
+	
+	console.log( "Last commit: \n" + lastCommit.id );
+
+	var updates = lastCommit.added.concat( lastCommit.modified );
+
+	console.log ( "Added or modified: \n " + updates );
+
+	var removed = lastCommit.removed;
+
+	console.log ( "Removed: \n " + removed );
+
+	for ( i = 0; i < updates.length; i++ ) {
+		parseContent( updates[i], ghrepo, function ( fileObj ) {
+			indexDoc( fileObj );
+		});
+	}
+
+	// delete removed index docs
+
+    } catch (err) {
+	console.log("Error:", err);
+    }
+
+    res.send('Done with post');	
+});
+
 app.get('/index', function(req, res){
     console.log('index request received');
 	var rootPath = '/';
@@ -38,7 +74,7 @@ function parsePath( path, ghrepo ) {
 				if ( data[i].type === 'file' ) {
 
 					parseContent( data[i].path, ghrepo, function ( fileObj ) {
-						//indexDoc( fileObj );
+						indexDoc( fileObj );
 					});
 
 				} else if ( data[i].type === 'dir' ) {
@@ -70,13 +106,9 @@ function parseContent ( path, ghrepo, callback ) {
 			content: converter.makeHtml( tempObj.body )
 		};
 
-		console.log( "Indexed " + path );
 		callback ( parsedObj );
 
 	});	
-	
-
-
 }
 
 function yamlFront ( input ) {
@@ -100,8 +132,10 @@ function indexDoc ( fileObj ) {
 		url: searchifyURL
 	});
 
-	client.put('/v1/indexes/idx/docs', {docid: fileObj.path, fields: { text: fileObj.content, title: fileObj.title } }, function(err, req, res, obj) {
-	});
+
+	//client.put('/v1/indexes/idx/docs', {docid: fileObj.path, fields: { text: fileObj.content, title: fileObj.title } }, function(err, req, res, obj) {
+	//});
+	console.log( "Indexed " + fileObj.path );
 
 }
 

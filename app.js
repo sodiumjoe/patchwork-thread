@@ -7,10 +7,10 @@ var github = require('octonode');
 var express = require('express');
 var app = express.createServer();
 app.use(express.logger());
-var fs = require('fs');
 var searchifyURL = process.env.SEARCHIFY_PRIVATE_API_URL;
 var client = github.client();
-var ghrepo = client.repo('joebadmo/afdocs-test');
+var repoName = 'joebadmo/afdocs-test';
+var ghrepo = client.repo(repoName);
 
 app.configure(function(){
     app.use(express.methodOverride());
@@ -24,6 +24,7 @@ app.get('/index', function(req, res){
 	var rootPath = '/';
 
 	parsePath( rootPath, ghrepo );
+	res.send( "index request received for " + repoName );
 });
 
 function parsePath( path, ghrepo ) {
@@ -69,7 +70,7 @@ function parseContent ( path, ghrepo, callback ) {
 			content: converter.makeHtml( tempObj.body )
 		};
 
-		console.log( rawContent.body );
+		console.log( "Indexed " + path );
 		callback ( parsedObj );
 
 	});	

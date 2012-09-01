@@ -7,6 +7,7 @@ var express = require('express');
 var app = express.createServer();
 app.use(express.logger());
 var searchifyURL = process.env.SEARCHIFY_PRIVATE_API_URL;
+var searchifyIndexName = 'afdocs';
 var client = github.client();
 var yamlFront = require('./lib/yamlFront');
 var repoName = 'joebadmo/afdocs-test';
@@ -86,7 +87,7 @@ function parsePath( path, ghrepo ) {
 function parseContent ( path, ghrepo, callback ) {
 
 	var rawHeader = { Accept: 'application/vnd.github.beta.raw+json' };
-	var rawPath = "https://api.github.com/repos/joebadmo/afdocs-test/contents/" + path;
+	var rawPath = "https://api.github.com/repos/" + repoName + "/contents/" + path;
 	var options = {
 		uri: rawPath,
 		headers: rawHeader
@@ -112,7 +113,7 @@ function indexDoc ( fileObj ) {
 		url: searchifyURL
 	});
 
-	client.put('/v1/indexes/afdocs/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
+	client.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
 		console.log ( 'Error: ' + err );
 	});
 
@@ -130,16 +131,12 @@ function deindexDoc ( path ) {
 		qs: 'docid=' + path
 	};
 
-	var delPath = '/v1/indexes/afdocs/docs/?' + 'docid=' + path;
+	var delPath = '/v1/indexes/' + searchifyIndexName + '/docs/?' + 'docid=' + path;
 
 	client.del( delPath, function(err, req, res) {
 		console.log( err );
 		console.log( req );
 	});
 }
-
-app.get('/pushtest', function(req, res){
-	deindexDoc( "services-overview" );
-});
 
 app.listen(process.env.VCAP_APP_PORT || 3000);

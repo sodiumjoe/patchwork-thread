@@ -12,7 +12,6 @@ var client = github.client();
 var yamlFront = require('./lib/yamlFront');
 var repoName = 'joebadmo/afdocs-test';
 var ghrepo = client.repo(repoName);
-var $ = require('jQuery');
 
 app.configure(function(){
     app.use(express.methodOverride());
@@ -100,7 +99,7 @@ function parseContent ( path, ghrepo, callback ) {
 		var parsedObj = {
 			title: tempObj.attributes.title,
 			path: path.replace(".markdown","").replace("index",""),
-			content: $.( converter.makeHtml( tempObj.body ) ).text(),
+			content: tempObj.body,
 			docid: path.replace(".markdown","").replace(/\//g,'-')
 		};
 

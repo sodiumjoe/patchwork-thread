@@ -2,6 +2,9 @@ var request = require('request');
 var Converter = require("./lib/pagedown/Markdown.Converter").Converter;
 var converter = new Converter();
 var restify = require('restify');
+var searchifyClient = restify.createJsonClient({
+	url: searchifyURL
+});
 var github = require('octonode');
 var express = require('express');
 var app = express.createServer();
@@ -12,12 +15,46 @@ var client = github.client();
 var yamlFront = require('./lib/yamlFront');
 var repoName = 'joebadmo/afdocs-test';
 var ghrepo = client.repo(repoName);
+var mongoose = require('mongoose'),
+	docsColl = mongoose.createConnection('localhost', 'test');
+
+docsColl.on('error', console.error.bind(console, 'connection error:'));
+docsColl.once( 'open', function () {
+	console.log ( 'yay!');
+});
+
+var docSchema = new mongoose.Schema ({
+	title: String,
+	body: String,
+	tags: []
+});
+
+var catSchema = new mongoose.Schema ({
+	title: String
+});
+
+var Doc = docsColl.model('document', docSchema );
 
 app.configure(function(){
     app.use(express.methodOverride());
     app.use(express.bodyParser());
     app.use(app.router);
 	app.use(express.logger());
+});
+
+app.get('/mongotest', function ( req, res ) {
+	newDoc.save( function ( err ) {
+		if ( err ) return handleError ( err );
+		console.log ( 'saved' );
+		res.send( 'saved' );
+	});
+	
+});
+
+app.get('/mongotestget', function ( req, res ) {
+	Doc.findOne().exec ( function ( err, thing ){
+		res.send ( thing + '\n' + thing.title + '\n' + thing.tags + '\n' );
+	});
 });
 
 app.post('/pusher', function(req, res){
@@ -33,7 +70,6 @@ app.post('/pusher', function(req, res){
 		console.log( "Last commit: \n" + lastCommit.id );
 
 		var updates = lastCommit.added.concat( lastCommit.modified );
-
 		var removed = lastCommit.removed;
 
 		console.log ( "Updating: \n " + updates.toString() );
@@ -67,10 +103,11 @@ function parsePath( path, ghrepo ) {
 		for ( i = 0; i < data.length; i++ ) {
 
 			// ignore dotfiles and contents
-			if ( data[i].path[0] !== '.' && data[i].name !=='contents') {
+			if ( data[i].path[1] !== '.' && data[i].name !=='contents') {
 
 				if ( data[i].type === 'file' ) {
 
+					console.log ( 'parsing ' + data[i].path );
 					parseContent( data[i].path, ghrepo, indexDoc );
 
 				} else if ( data[i].type === 'dir' ) {
@@ -93,7 +130,11 @@ function parseContent ( path, ghrepo, callback ) {
 		headers: rawHeader
 	};
 
-	request( options, function (error, rawContent, body) {
+	request( options, function ( error, rawContent, body ) {
+
+		if ( error ) {
+			console.log ( error + path );
+		}
 
 		var tempObj = yamlFront.parse( rawContent.body );
 		var parsedObj = {
@@ -109,21 +150,25 @@ function parseContent ( path, ghrepo, callback ) {
 }
 
 function indexDoc ( fileObj ) {
-	var client = restify.createJsonClient({
-		url: searchifyURL
+
+	searchifyClient.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
+		console.log ( 'index error: ' + err );
+		console.log( "Indexed " + fileObj.path );
 	});
 
-	client.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
-		console.log ( 'Error: ' + err );
+
+	var newDoc = new Doc ({ 
+		title: fileObj.title,
+		body: fileObj.content
 	});
 
-	console.log( "Indexed " + fileObj.path );
+	newDoc.save( function ( err ) {
+		if ( err ) return handleError ( err );
+		console.log ( 'saved to mongodb' );
+	});
 }
 
 function deindexDoc ( path ) {
-	var client = restify.createJsonClient({
-		url: searchifyURL
-	});
 
 	var options = {
 		uri: searchifyURL,
@@ -133,27 +178,10 @@ function deindexDoc ( path ) {
 
 	var delPath = '/v1/indexes/' + searchifyIndexName + '/docs/?' + 'docid=' + path;
 
-	client.del( delPath, function(err, req, res) {
+	searchifyClient.del( delPath, function(err, req, res) {
 		console.log( err );
 		console.log( req );
 	});
 }
 
 app.listen(process.env.VCAP_APP_PORT || 3000);
-
-var record_visit = function(req, res){
-    /* Connect to the DB and auth */
-    require('mongodb').connect(mongourl, function(err, conn){
-        conn.collection('ips', function(err, coll){
-            /* Simple object to insert: ip address and date */
-            object_to_insert = { 'ip': req.connection.remoteAddress, 'ts': new Date() };
-            /* Insert the object then print in response */
-            /* Note the _id has been created */
-            coll.insert( object_to_insert, {safe:true}, function(err){
-            res.writeHead(200, {'Content-Type': 'text/plain'});
-            res.write(JSON.stringify(object_to_insert));
-            res.end('\n');
-            });
-        });
-    });
-}

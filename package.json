@@ -6,6 +6,7 @@
 	  "octonode":"",
 	  "restify":"",
 	  "request":"",
-	  "yamlparser":""
+	  "yamlparser":"",
+	  "mongoose":""
   }
 }

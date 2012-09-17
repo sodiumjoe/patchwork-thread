@@ -20,16 +20,18 @@ var mongoose = require('mongoose'),
 
 docsColl.on('error', console.error.bind(console, 'connection error:'));
 docsColl.once( 'open', function () {
-	console.log ( 'yay!');
+	console.log ( 'connected to mongodb');
 });
 
 var docSchema = new mongoose.Schema ({
 	title: String,
 	body: String,
+	category: String,
+	path: String,
 	tags: []
 });
 
-var catSchema = new mongoose.Schema ({
+var menuSchema  = new mongoose.Schema ({
 	title: String
 });
 
@@ -42,23 +44,8 @@ app.configure(function(){
 	app.use(express.logger());
 });
 
-app.get('/mongotest', function ( req, res ) {
-	newDoc.save( function ( err ) {
-		if ( err ) return handleError ( err );
-		console.log ( 'saved' );
-		res.send( 'saved' );
-	});
-	
-});
-
-app.get('/mongotestget', function ( req, res ) {
-	Doc.findOne().exec ( function ( err, thing ){
-		res.send ( thing + '\n' + thing.title + '\n' + thing.tags + '\n' );
-	});
-});
-
-app.post('/pusher', function(req, res){
-    console.log('post received');
+app.post('/pusher', function(req, res) {
+    console.log( 'post received' );
     try {
 		p = req.body.payload;
 		console.log(p);
@@ -103,10 +90,13 @@ function parsePath( path, ghrepo ) {
 		for ( i = 0; i < data.length; i++ ) {
 
 			// ignore dotfiles and contents
-			if ( data[i].path[1] !== '.' && data[i].name !=='contents') {
+			if ( data[i].path.substring( 1, 2 ) !== '.' && data[i].name !=='contents') {
 
 				if ( data[i].type === 'file' ) {
 
+					if ( data[i].path.substring( 0, 1 ) === '/' ) {
+						data[i].path = data[i].path.substring( 1 );
+					}
 					console.log ( 'parsing ' + data[i].path );
 					parseContent( data[i].path, ghrepo, indexDoc );
 
@@ -151,20 +141,45 @@ function parseContent ( path, ghrepo, callback ) {
 
 function indexDoc ( fileObj ) {
 
-	searchifyClient.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
+	/*searchifyClient.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
 		console.log ( 'index error: ' + err );
 		console.log( "Indexed " + fileObj.path );
-	});
+	});*/
 
+	var pathArr = fileObj.path.split('/');
+	var cat = '';
+	for ( i = 0; i < pathArr.length - 1; i++ ) {
+		cat += pathArr[i];
+		if ( i < pathArr.length - 2 ) {
+			cat += '.';
+		}
+	}
 
-	var newDoc = new Doc ({ 
-		title: fileObj.title,
-		body: fileObj.content
-	});
+	Doc.findOne ( { 'path': fileObj.path } , function ( err, doc ) {
 
-	newDoc.save( function ( err ) {
-		if ( err ) return handleError ( err );
-		console.log ( 'saved to mongodb' );
+		if ( doc ) {
+			doc.title = fileObj.title;
+			doc.body = fileObj.content;
+			doc.path = fileObj.path;
+			doc.category = cat;
+			doc.save( function ( err ) {
+				if ( err ) return handleError ( err );
+				console.log ( fileObj.path + ' doc updated to mongodb' + 'category: ' + cat );
+			});
+		} else {
+
+			var newDoc = new Doc ({ 
+				title: fileObj.title,
+				body: fileObj.content,
+				path: fileObj.path,
+				category: cat
+			});
+
+			newDoc.save( function ( err ) {
+				if ( err ) return handleError ( err );
+				console.log ( fileObj.path + ' new doc saved to mongodb' + 'category: ' + cat );
+			});
+		}
 	});
 }
 

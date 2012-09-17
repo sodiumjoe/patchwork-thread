@@ -66,7 +66,7 @@ app.post('/pusher', function(req, res) {
 
 		console.log ( "Removing: \n " + removed.toString() );
 		for ( i = 0; i < removed.length; i++ ) {
-			deindexDoc( removed[i].replace(".markdown","").replace("index","") );
+			deindexDoc( removed[i] );
 		}
 
     } catch (err) {
@@ -188,7 +188,7 @@ function deindexDoc ( path ) {
 	var options = {
 		uri: searchifyURL,
 		method: 'DELETE',
-		qs: 'docid=' + path
+		qs: 'docid=' + path.replace('.markdown','').replace('/', '-')
 	};
 
 	var delPath = '/v1/indexes/' + searchifyIndexName + '/docs/?' + 'docid=' + path;
@@ -197,6 +197,8 @@ function deindexDoc ( path ) {
 		console.log( err );
 		console.log( req );
 	});
+
+	Doc.find ( { 'path': path.replace('.markdown','') } ).remove();
 }
 
 app.listen(process.env.VCAP_APP_PORT || 3000);

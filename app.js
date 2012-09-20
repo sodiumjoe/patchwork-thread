@@ -90,7 +90,7 @@ function parsePath( path, ghrepo ) {
 		for ( i = 0; i < data.length; i++ ) {
 
 			// ignore dotfiles and contents
-			if ( data[i].path.substring( 1, 2 ) !== '.' && data[i].name !=='contents') {
+			if ( data[i].path.substring( 0, 1 ) !== '.' && data[i].name !=='contents') {
 
 				if ( data[i].type === 'file' ) {
 

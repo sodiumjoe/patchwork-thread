@@ -32,7 +32,7 @@ var docSchema = new mongoose.Schema ({
 });
 
 var menuSchema  = new mongoose.Schema ({
-	title: String
+	menuJSON: String
 });
 
 var Doc = docsColl.model('document', docSchema );
@@ -199,6 +199,42 @@ function deindexDoc ( path ) {
 	});
 
 	Doc.find ( { 'path': path.replace('.markdown','') } ).remove();
+}
+
+function buildMenu ( path, ghrepo ) {
+	ghrepo.contents(path, function (err, data) {
+
+		var menuObj = {
+			title: 'root',
+			path: '/',
+			weight: '0',
+			children: {}
+		}
+
+
+		/*
+		for ( i = 0; i < data.length; i++ ) {
+
+			// ignore dotfiles and contents
+			if ( data[i].path.substring( 0, 1 ) !== '.' && data[i].name !=='contents') {
+
+				if ( data[i].type === 'file' ) {
+
+					if ( data[i].path.substring( 0, 1 ) === '/' ) {
+						data[i].path = data[i].path.substring( 1 );
+					}
+					console.log ( 'parsing ' + data[i].path );
+					parseContent( data[i].path, ghrepo, indexDoc );
+
+				} else if ( data[i].type === 'dir' ) {
+
+					parsePath( data[i].path, ghrepo );
+
+				}
+
+			}
+		}
+	});
 }
 
 app.listen(process.env.VCAP_APP_PORT || 3000);

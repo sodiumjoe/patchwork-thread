@@ -7,6 +7,7 @@
 	  "restify":"",
 	  "request":"",
 	  "yamlparser":"",
-	  "mongoose":""
+	  "mongoose":"",
+	  "async":""
   }
 }

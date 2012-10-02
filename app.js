@@ -5,15 +5,16 @@ var restify = require('restify');
 var searchifyClient = restify.createJsonClient({
 	url: searchifyURL
 });
-var github = require('octonode');
+var async = require('async');
 var express = require('express');
 var app = express.createServer();
 app.use(express.logger());
 var searchifyURL = process.env.SEARCHIFY_PRIVATE_API_URL;
 var searchifyIndexName = 'afdocs';
-var client = github.client();
 var yamlFront = require('./lib/yamlFront');
 var repoName = 'joebadmo/afdocs-test';
+var github = require('octonode');
+var client = github.client();
 var ghrepo = client.repo(repoName);
 var mongoose = require('mongoose'),
 	docsColl = mongoose.createConnection('localhost', 'test');
@@ -32,10 +33,13 @@ var docSchema = new mongoose.Schema ({
 });
 
 var menuSchema  = new mongoose.Schema ({
-	menuJSON: String
+	menuArray: String
 });
 
 var Doc = docsColl.model('document', docSchema );
+var Menu = docsColl.model('menu', menuSchema );
+
+var recursionCount = 1;
 
 app.configure(function(){
     app.use(express.methodOverride());
@@ -81,7 +85,38 @@ app.get('/index', function(req, res){
 	var rootPath = '/';
 
 	parsePath( rootPath, ghrepo );
+
+	var menuArr = [];
+	buildMenu( rootPath, ghrepo, menuArr );
+
 	res.send( "index request received for " + repoName );
+});
+var menuArr = [];
+
+app.get('/menu', function(req, res){
+    console.log('menu index request received');
+	var rootPath = '/';
+
+	menuArr = [];
+	recursionCount = 1;
+	buildMenu( rootPath, ghrepo, menuArr, recursionCount, function () {
+		var newMenu = new Menu ({ 
+			menuArray: menuArr
+		});
+		newMenu.save( function ( err ) {
+			if ( err ) return handleError ( err );
+			console.log ( ' new menu saved to mongodb' + menuArr );
+		});
+	});
+	res.send( "index request received for " + repoName );
+});
+
+app.get('/getmenu', function ( req, res ) {
+	console.log ( menuArr + ' ' + recursionCount );
+	res.send ( menuArr );
+	Menu.findOne ( function ( err, menu ) {
+		console.log ( menu );
+	});
 });
 
 function parsePath( path, ghrepo ) {
@@ -97,7 +132,7 @@ function parsePath( path, ghrepo ) {
 					if ( data[i].path.substring( 0, 1 ) === '/' ) {
 						data[i].path = data[i].path.substring( 1 );
 					}
-					console.log ( 'parsing ' + data[i].path );
+					//console.log ( 'parsing ' + data[i].path );
 					parseContent( data[i].path, ghrepo, indexDoc );
 
 				} else if ( data[i].type === 'dir' ) {
@@ -105,7 +140,6 @@ function parsePath( path, ghrepo ) {
 					parsePath( data[i].path, ghrepo );
 
 				}
-
 			}
 		}
 	});
@@ -131,7 +165,8 @@ function parseContent ( path, ghrepo, callback ) {
 			title: tempObj.attributes.title,
 			path: path.replace(".markdown","").replace("index",""),
 			content: tempObj.body,
-			docid: path.replace(".markdown","").replace(/\//g,'-')
+			docid: path.replace(".markdown","").replace(/\//g,'-'),
+			weight: tempObj.attributes.weight || 0
 		};
 
 		callback ( parsedObj );
@@ -141,6 +176,7 @@ function parseContent ( path, ghrepo, callback ) {
 
 function indexDoc ( fileObj ) {
 
+	// Index to Searchify
 	/*searchifyClient.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
 		console.log ( 'index error: ' + err );
 		console.log( "Indexed " + fileObj.path );
@@ -155,6 +191,7 @@ function indexDoc ( fileObj ) {
 		}
 	}
 
+	// Index to MongoDB
 	Doc.findOne ( { 'path': fileObj.path } , function ( err, doc ) {
 
 		if ( doc ) {
@@ -181,6 +218,7 @@ function indexDoc ( fileObj ) {
 			});
 		}
 	});
+
 }
 
 function deindexDoc ( path ) {
@@ -201,40 +239,74 @@ function deindexDoc ( path ) {
 	Doc.find ( { 'path': path.replace('.markdown','') } ).remove();
 }
 
-function buildMenu ( path, ghrepo ) {
-	ghrepo.contents(path, function (err, data) {
+function buildMenu ( path, ghrepo, menuArray, count, callback ) {
+	async.series ([
+		function ( asyncCallback ) {
+			ghrepo.contents( path, function ( err, data ) {
 
-		var menuObj = {
-			title: 'root',
-			path: '/',
-			weight: '0',
-			children: {}
-		}
+				for ( i = 0; i < data.length; i++ ) {
 
+					// ignore dotfiles and contents
+					if ( data[i].path.substring( 0, 1 ) !== '.' && data[i].name !=='contents') {
 
-		/*
-		for ( i = 0; i < data.length; i++ ) {
+						if ( data[i].type === 'file' ) {
 
-			// ignore dotfiles and contents
-			if ( data[i].path.substring( 0, 1 ) !== '.' && data[i].name !=='contents') {
+							if ( data[i].path.substring( 0, 1 ) === '/' ) {
+								data[i].path = data[i].path.substring( 1 );
+							}
 
-				if ( data[i].type === 'file' ) {
+							parseContent( data[i].path, ghrepo, function ( parsedObj ) {
 
-					if ( data[i].path.substring( 0, 1 ) === '/' ) {
-						data[i].path = data[i].path.substring( 1 );
+								var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight };
+								if ( parsedObj.path.substring ( parsedObj.path.length - 8, parsedObj.path.length ) === 'overview' ) {
+									newMenuObj.weight = 0;
+								}
+
+								menuArray.push ( newMenuObj );
+
+								var menuLength = menuArray.length;
+								if ( menuArray.length > 0 ) {
+									console.log ( 'length' + menuArray.length );
+									loop1:
+										for ( var j = 0; j < menuLength; j++ ) {
+											console.log ( j + ' ' + menuArray[j].title );
+											/*
+											if ( newMenuObj.weight <= menuArray[j].weight ) {
+												menuArray.splice( j, 0, newMenuObj );
+												break loop1;
+											} else {
+												menuArray.push ( newMenuObj );
+												break loop1;
+											}
+											*/
+										}
+								}
+							});
+
+						} else if ( data[i].type === 'dir' ) {
+
+							recursionCount++;
+							parseContent( data[i].path + '/overview.markdown', ghrepo, function ( parsedObj ) {
+
+								var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight, 'children': [] };
+								menuArray.push ( newMenuObj );
+
+								buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, count, callback );
+							});
+						}
 					}
-					console.log ( 'parsing ' + data[i].path );
-					parseContent( data[i].path, ghrepo, indexDoc );
-
-				} else if ( data[i].type === 'dir' ) {
-
-					parsePath( data[i].path, ghrepo );
-
 				}
-
+				asyncCallback ( null );
+			});
+		},
+		function ( asyncCallback2 ) {
+			recursionCount--;
+			if ( recursionCount === 0 ) {
+				callback();
 			}
+			asyncCallback2();
 		}
-	});
+	]);
 }
 
 app.listen(process.env.VCAP_APP_PORT || 3000);

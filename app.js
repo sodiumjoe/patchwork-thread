@@ -39,7 +39,7 @@ var menuSchema  = new mongoose.Schema ({
 var Doc = docsColl.model('document', docSchema );
 var Menu = docsColl.model('menu', menuSchema );
 
-var recursionCount = 1;
+var recursionCount = 0;
 
 app.configure(function(){
     app.use(express.methodOverride());
@@ -87,7 +87,7 @@ app.get('/index', function(req, res){
 	parsePath( rootPath, ghrepo );
 
 	var menuArr = [];
-	buildMenu( rootPath, ghrepo, menuArr );
+	//buildMenu( rootPath, ghrepo, menuArr );
 
 	res.send( "index request received for " + repoName );
 });
@@ -99,7 +99,7 @@ app.get('/menu', function(req, res){
 
 	menuArr = [];
 	recursionCount = 1;
-	buildMenu( rootPath, ghrepo, menuArr, recursionCount, function () {
+	buildMenu( rootPath, ghrepo, menuArr, function () {
 		var newMenu = new Menu ({ 
 			menuArray: menuArr
 		});
@@ -239,11 +239,12 @@ function deindexDoc ( path ) {
 	Doc.find ( { 'path': path.replace('.markdown','') } ).remove();
 }
 
-function buildMenu ( path, ghrepo, menuArray, count, callback ) {
+function buildMenu ( path, ghrepo, menuArray, callback ) {
 	async.series ([
 		function ( asyncCallback ) {
 			ghrepo.contents( path, function ( err, data ) {
 
+				var loopCount = 0;
 				for ( i = 0; i < data.length; i++ ) {
 
 					// ignore dotfiles and contents
@@ -255,6 +256,7 @@ function buildMenu ( path, ghrepo, menuArray, count, callback ) {
 								data[i].path = data[i].path.substring( 1 );
 							}
 
+							loopCount++;
 							parseContent( data[i].path, ghrepo, function ( parsedObj ) {
 
 								var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight };
@@ -263,48 +265,41 @@ function buildMenu ( path, ghrepo, menuArray, count, callback ) {
 								}
 
 								menuArray.push ( newMenuObj );
-
-								var menuLength = menuArray.length;
-								if ( menuArray.length > 0 ) {
-									console.log ( 'length' + menuArray.length );
-									loop1:
-										for ( var j = 0; j < menuLength; j++ ) {
-											console.log ( j + ' ' + menuArray[j].title );
-											/*
-											if ( newMenuObj.weight <= menuArray[j].weight ) {
-												menuArray.splice( j, 0, newMenuObj );
-												break loop1;
-											} else {
-												menuArray.push ( newMenuObj );
-												break loop1;
-											}
-											*/
-										}
+								loopCount--;
+								if ( loopCount === 0 ) {
+									asyncCallback ( null );
 								}
 							});
 
 						} else if ( data[i].type === 'dir' ) {
 
 							recursionCount++;
+							loopCount++;
 							parseContent( data[i].path + '/overview.markdown', ghrepo, function ( parsedObj ) {
 
 								var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight, 'children': [] };
 								menuArray.push ( newMenuObj );
+								console.log ( newMenuObj.path );
 
-								buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, count, callback );
+								//buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, callback );
+								loopCount--;
+								if ( loopCount === 0 ) {
+									asyncCallback ( null );
+								}
 							});
 						}
 					}
 				}
-				asyncCallback ( null );
+				asyncCallback( null );
 			});
 		},
-		function ( asyncCallback2 ) {
+		function ( asyncCallback ) {
+			console.log ( 'recursion count after async: ' + recursionCount );
 			recursionCount--;
 			if ( recursionCount === 0 ) {
 				callback();
 			}
-			asyncCallback2();
+			asyncCallback( null );
 		}
 	]);
 }

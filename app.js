@@ -100,12 +100,8 @@ app.get('/menu', function(req, res){
 	menuArr = [];
 	recursionCount = 1;
 	buildMenu( rootPath, ghrepo, menuArr, function () {
-		var newMenu = new Menu ({ 
-			menuArray: menuArr
-		});
-		newMenu.save( function ( err ) {
-			if ( err ) return handleError ( err );
-			console.log ( ' new menu saved to mongodb' + menuArr );
+		sortMenu ( menuArr, function ( sortedMenu ) {
+			saveMenu ( sortedMenu );
 		});
 	});
 	res.send( "index request received for " + repoName );
@@ -240,68 +236,66 @@ function deindexDoc ( path ) {
 }
 
 function buildMenu ( path, ghrepo, menuArray, callback ) {
-	async.series ([
-		function ( asyncCallback ) {
-			ghrepo.contents( path, function ( err, data ) {
+	ghrepo.contents( path, function ( err, data ) {
+		async.forEach( data, parseMenuArray, callback );
+	});
 
-				var loopCount = 0;
-				for ( i = 0; i < data.length; i++ ) {
+	function parseMenuArray ( item, forCallback ) {
 
-					// ignore dotfiles and contents
-					if ( data[i].path.substring( 0, 1 ) !== '.' && data[i].name !=='contents') {
+		console.log ( item.path );
+		// ignore dotfiles and contents
+		if ( item.path.substring( 0, 1 ) !== '.' && item.name !=='contents') {
 
-						if ( data[i].type === 'file' ) {
+			if ( item.type === 'file' ) {
 
-							if ( data[i].path.substring( 0, 1 ) === '/' ) {
-								data[i].path = data[i].path.substring( 1 );
-							}
-
-							loopCount++;
-							parseContent( data[i].path, ghrepo, function ( parsedObj ) {
-
-								var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight };
-								if ( parsedObj.path.substring ( parsedObj.path.length - 8, parsedObj.path.length ) === 'overview' ) {
-									newMenuObj.weight = 0;
-								}
-
-								menuArray.push ( newMenuObj );
-								loopCount--;
-								if ( loopCount === 0 ) {
-									asyncCallback ( null );
-								}
-							});
-
-						} else if ( data[i].type === 'dir' ) {
-
-							recursionCount++;
-							loopCount++;
-							parseContent( data[i].path + '/overview.markdown', ghrepo, function ( parsedObj ) {
-
-								var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight, 'children': [] };
-								menuArray.push ( newMenuObj );
-								console.log ( newMenuObj.path );
-
-								//buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, callback );
-								loopCount--;
-								if ( loopCount === 0 ) {
-									asyncCallback ( null );
-								}
-							});
-						}
-					}
+				if ( item.path.substring( 0, 1 ) === '/' ) {
+					item.path = item.path.substring( 1 );
 				}
-				asyncCallback( null );
-			});
-		},
-		function ( asyncCallback ) {
-			console.log ( 'recursion count after async: ' + recursionCount );
-			recursionCount--;
-			if ( recursionCount === 0 ) {
-				callback();
+
+				parseContent( item.path, ghrepo, function ( parsedObj ) {
+
+					var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight };
+					if ( parsedObj.path.substring ( parsedObj.path.length - 8, parsedObj.path.length ) === 'overview' ) {
+						newMenuObj.weight = 0;
+					}
+
+					menuArray.push ( newMenuObj );
+					forCallback ( null );
+				});
+
+			} else if ( item.type === 'dir' ) {
+
+				parseContent( item.path + '/overview.markdown', ghrepo, function ( parsedObj ) {
+
+					var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight, 'children': [] };
+					menuArray.push ( newMenuObj );
+					console.log ( newMenuObj.path );
+
+					buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, forCallback );
+				});
 			}
-			asyncCallback( null );
+		} else {
+			forCallback ( null );
 		}
-	]);
+	}
+}
+
+function sortMenu ( menuArr, callback ) {
+	async.sortBy ( menuArr, function ( item, sortCallback ) {
+		sortCallback ( null, item.weight );
+	}, function ( err, results ) {
+		callback ( results );
+	});
+}
+
+function saveMenu ( menuArr ) {
+	var newMenu = new Menu ({ 
+		menuArray: menuArr
+	});
+	newMenu.save( function ( err ) {
+		if ( err ) return handleError ( err );
+		console.log ( ' new menu saved to mongodb' + menuArr );
+	});
 }
 
 app.listen(process.env.VCAP_APP_PORT || 3000);

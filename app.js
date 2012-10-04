@@ -19,6 +19,8 @@ var ghrepo = client.repo(repoName);
 var mongoose = require('mongoose'),
 	docsColl = mongoose.createConnection('localhost', 'test');
 
+var fileCount = 0;
+
 docsColl.on('error', console.error.bind(console, 'connection error:'));
 docsColl.once( 'open', function () {
 	console.log ( 'connected to mongodb');
@@ -91,6 +93,7 @@ app.get('/index', function(req, res){
 
 	res.send( "index request received for " + repoName );
 });
+
 var menuArr = [];
 
 app.get('/menu', function(req, res){
@@ -108,10 +111,9 @@ app.get('/menu', function(req, res){
 });
 
 app.get('/getmenu', function ( req, res ) {
-	console.log ( menuArr + ' ' + recursionCount );
 	res.send ( menuArr );
 	Menu.findOne ( function ( err, menu ) {
-		console.log ( menu );
+		//console.log ( menu );
 	});
 });
 
@@ -164,6 +166,10 @@ function parseContent ( path, ghrepo, callback ) {
 			docid: path.replace(".markdown","").replace(/\//g,'-'),
 			weight: tempObj.attributes.weight || 0
 		};
+
+		if ( parsedObj.path.substring ( parsedObj.path.length - 8, parsedObj.path.length ) === 'overview' ) {
+			parsedObj.weight = 0;
+		}
 
 		callback ( parsedObj );
 
@@ -242,7 +248,6 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 
 	function parseMenuArray ( item, forCallback ) {
 
-		console.log ( item.path );
 		// ignore dotfiles and contents
 		if ( item.path.substring( 0, 1 ) !== '.' && item.name !=='contents') {
 
@@ -255,11 +260,9 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 				parseContent( item.path, ghrepo, function ( parsedObj ) {
 
 					var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight };
-					if ( parsedObj.path.substring ( parsedObj.path.length - 8, parsedObj.path.length ) === 'overview' ) {
-						newMenuObj.weight = 0;
-					}
 
 					menuArray.push ( newMenuObj );
+					console.log ( newMenuObj.path );
 					forCallback ( null );
 				});
 
@@ -280,21 +283,34 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 	}
 }
 
-function sortMenu ( menuArr, callback ) {
-	async.sortBy ( menuArr, function ( item, sortCallback ) {
-		sortCallback ( null, item.weight );
+function sortMenu ( menuArr2, callback ) {
+	async.sortBy ( menuArr2, function ( item, sortCallback ) {
+		if ( item.children ) {
+			if ( item.children.length > 0 ) {
+				sortMenu ( item.children, function () { 
+					sortCallback ( null, item.weight );
+				});
+			} else {
+				sortCallback ( null, item.weight );
+			}
+		} else {
+			sortCallback ( null, item.weight );
+		}
 	}, function ( err, results ) {
+		console.log ( results );
 		callback ( results );
 	});
 }
 
-function saveMenu ( menuArr ) {
+function saveMenu ( menuArr2 ) {
 	var newMenu = new Menu ({ 
-		menuArray: menuArr
+		menuArray: menuArr2
 	});
 	newMenu.save( function ( err ) {
 		if ( err ) return handleError ( err );
-		console.log ( ' new menu saved to mongodb' + menuArr );
+		//console.log ( ' new menu saved to mongodb' + menuArr );
+		console.log ( menuArr2 );
+		menuArr = menuArr2
 	});
 }
 

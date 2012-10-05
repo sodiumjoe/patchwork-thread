@@ -19,8 +19,6 @@ var ghrepo = client.repo(repoName);
 var mongoose = require('mongoose'),
 	docsColl = mongoose.createConnection('localhost', 'test');
 
-var fileCount = 0;
-
 docsColl.on('error', console.error.bind(console, 'connection error:'));
 docsColl.once( 'open', function () {
 	console.log ( 'connected to mongodb');
@@ -35,22 +33,20 @@ var docSchema = new mongoose.Schema ({
 });
 
 var menuSchema  = new mongoose.Schema ({
-	menuArray: String
+	menuArray: {}
 });
 
-var Doc = docsColl.model('document', docSchema );
-var Menu = docsColl.model('menu', menuSchema );
+var Doc = docsColl.model( 'document', docSchema );
+var Menu = docsColl.model( 'menu', menuSchema );
 
-var recursionCount = 0;
-
-app.configure(function(){
+app.configure ( function ( ) {
     app.use(express.methodOverride());
     app.use(express.bodyParser());
     app.use(app.router);
 	app.use(express.logger());
 });
 
-app.post('/pusher', function(req, res) {
+app.post( '/pusher', function( req, res ) {
     console.log( 'post received' );
     try {
 		p = req.body.payload;
@@ -60,7 +56,7 @@ app.post('/pusher', function(req, res) {
 
 		var lastCommit = obj.commits[ obj.commits.length - 1 ];
 		
-		console.log( "Last commit: \n" + lastCommit.id );
+		console.log ( "Last commit: \n" + lastCommit.id );
 
 		var updates = lastCommit.added.concat( lastCommit.modified );
 		var removed = lastCommit.removed;
@@ -74,6 +70,8 @@ app.post('/pusher', function(req, res) {
 		for ( i = 0; i < removed.length; i++ ) {
 			deindexDoc( removed[i] );
 		}
+
+
 
     } catch (err) {
 		console.log("Error:", err);
@@ -94,26 +92,21 @@ app.get('/index', function(req, res){
 	res.send( "index request received for " + repoName );
 });
 
-var menuArr = [];
-
 app.get('/menu', function(req, res){
-    console.log('menu index request received');
 	var rootPath = '/';
-
-	menuArr = [];
-	recursionCount = 1;
+	var menuArr = [];
 	buildMenu( rootPath, ghrepo, menuArr, function () {
 		sortMenu ( menuArr, function ( sortedMenu ) {
 			saveMenu ( sortedMenu );
 		});
 	});
+    console.log('menu index request received');
 	res.send( "index request received for " + repoName );
 });
 
 app.get('/getmenu', function ( req, res ) {
-	res.send ( menuArr );
 	Menu.findOne ( function ( err, menu ) {
-		//console.log ( menu );
+		res.send ( JSON.stringify ( menu.menuArray ) );
 	});
 });
 
@@ -166,10 +159,6 @@ function parseContent ( path, ghrepo, callback ) {
 			docid: path.replace(".markdown","").replace(/\//g,'-'),
 			weight: tempObj.attributes.weight || 0
 		};
-
-		if ( parsedObj.path.substring ( parsedObj.path.length - 8, parsedObj.path.length ) === 'overview' ) {
-			parsedObj.weight = 0;
-		}
 
 		callback ( parsedObj );
 
@@ -249,7 +238,7 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 	function parseMenuArray ( item, forCallback ) {
 
 		// ignore dotfiles and contents
-		if ( item.path.substring( 0, 1 ) !== '.' && item.name !=='contents') {
+		if ( item.path.substring( 0, 1 ) !== '.' ) {
 
 			if ( item.type === 'file' ) {
 
@@ -260,9 +249,10 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 				parseContent( item.path, ghrepo, function ( parsedObj ) {
 
 					var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight };
-
+					if ( newMenuObj.path.substring ( newMenuObj.path.length - 8, newMenuObj.path.length ) === 'overview' ) {
+						newMenuObj.weight = 0;
+					}
 					menuArray.push ( newMenuObj );
-					console.log ( newMenuObj.path );
 					forCallback ( null );
 				});
 
@@ -272,7 +262,7 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 
 					var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight, 'children': [] };
 					menuArray.push ( newMenuObj );
-					console.log ( newMenuObj.path );
+					//console.log ( newMenuObj.path );
 
 					buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, forCallback );
 				});
@@ -287,7 +277,9 @@ function sortMenu ( menuArr2, callback ) {
 	async.sortBy ( menuArr2, function ( item, sortCallback ) {
 		if ( item.children ) {
 			if ( item.children.length > 0 ) {
-				sortMenu ( item.children, function () { 
+				console.log ('sorting inner');
+				sortMenu ( item.children, function ( results ) { 
+					item.children = results;
 					sortCallback ( null, item.weight );
 				});
 			} else {
@@ -297,20 +289,18 @@ function sortMenu ( menuArr2, callback ) {
 			sortCallback ( null, item.weight );
 		}
 	}, function ( err, results ) {
-		console.log ( results );
-		callback ( results );
+		menuArr2 = results;
+		callback ( menuArr2 );
 	});
 }
 
-function saveMenu ( menuArr2 ) {
+function saveMenu ( menuArr ) {
 	var newMenu = new Menu ({ 
-		menuArray: menuArr2
+		menuArray: menuArr
 	});
 	newMenu.save( function ( err ) {
 		if ( err ) return handleError ( err );
-		//console.log ( ' new menu saved to mongodb' + menuArr );
-		console.log ( menuArr2 );
-		menuArr = menuArr2
+		console.log ( ' new menu saved to mongodb' + menuArr );
 	});
 }
 

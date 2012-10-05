@@ -1,23 +1,25 @@
-var request = require('request');
-var Converter = require("./lib/pagedown/Markdown.Converter").Converter;
-var converter = new Converter();
-var restify = require('restify');
-var searchifyClient = restify.createJsonClient({
-	url: searchifyURL
-});
-var async = require('async');
-var express = require('express');
-var app = express.createServer();
+var request = require('request'),
+    Converter = require("./lib/pagedown/Markdown.Converter").Converter,
+    converter = new Converter(),
+    restify = require('restify'),
+    searchifyClient = restify.createJsonClient({
+		url: searchifyURL
+	}),
+    async = require('async'),
+    express = require('express'),
+    app = express.createServer(),
+    searchifyURL = process.env.SEARCHIFY_PRIVATE_API_URL,
+    searchifyIndexName = 'afdocs',
+    yamlFront = require('./lib/yamlFront'),
+    repoName = 'joebadmo/afdocs-test',
+    github = require('octonode'),
+    client = github.client(),
+    ghrepo = client.repo(repoName),
+    mongoose = require('mongoose'),
+	docsColl = mongoose.createConnection('localhost', 'test'),
+	rootPath = '/';
+
 app.use(express.logger());
-var searchifyURL = process.env.SEARCHIFY_PRIVATE_API_URL;
-var searchifyIndexName = 'afdocs';
-var yamlFront = require('./lib/yamlFront');
-var repoName = 'joebadmo/afdocs-test';
-var github = require('octonode');
-var client = github.client();
-var ghrepo = client.repo(repoName);
-var mongoose = require('mongoose'),
-	docsColl = mongoose.createConnection('localhost', 'test');
 
 docsColl.on('error', console.error.bind(console, 'connection error:'));
 docsColl.once( 'open', function () {
@@ -32,8 +34,9 @@ var docSchema = new mongoose.Schema ({
 	tags: []
 });
 
-var menuSchema  = new mongoose.Schema ({
-	menuArray: {}
+var menuSchema = new mongoose.Schema ({
+	menuArray: {},
+	title: String
 });
 
 var Doc = docsColl.model( 'document', docSchema );
@@ -82,31 +85,38 @@ app.post( '/pusher', function( req, res ) {
 
 app.get('/index', function(req, res){
     console.log('index request received');
-	var rootPath = '/';
-
 	parsePath( rootPath, ghrepo );
-
-	var menuArr = [];
-	//buildMenu( rootPath, ghrepo, menuArr );
+	buildMenu( rootPath, ghrepo, [], function () {
+		sortMenu ( menuArr, function ( sortedMenu ) {
+			saveMenu ( sortedMenu, function () {
+				console.log ( 'done' );
+			});
+		});
+	});
 
 	res.send( "index request received for " + repoName );
 });
 
 app.get('/menu', function(req, res){
-	var rootPath = '/';
 	var menuArr = [];
-	buildMenu( rootPath, ghrepo, menuArr, function () {
-		sortMenu ( menuArr, function ( sortedMenu ) {
-			saveMenu ( sortedMenu );
-		});
-	});
     console.log('menu index request received');
 	res.send( "index request received for " + repoName );
+	buildMenu( rootPath, ghrepo, menuArr, function () {
+		sortMenu ( menuArr, function ( sortedMenu ) {
+			saveMenu ( sortedMenu, function () {
+				console.log ( 'menu saved' );
+			});
+		});
+	});
 });
 
 app.get('/getmenu', function ( req, res ) {
-	Menu.findOne ( function ( err, menu ) {
-		res.send ( JSON.stringify ( menu.menuArray ) );
+	Menu.find( { 'title': 'menu' }, function ( err, menu ) {
+		console.log ( menu );
+		if ( err ) {
+			console.log ( err );
+		}
+		res.send ( JSON.stringify ( menu ) );
 	});
 });
 
@@ -123,7 +133,7 @@ function parsePath( path, ghrepo ) {
 					if ( data[i].path.substring( 0, 1 ) === '/' ) {
 						data[i].path = data[i].path.substring( 1 );
 					}
-					//console.log ( 'parsing ' + data[i].path );
+
 					parseContent( data[i].path, ghrepo, indexDoc );
 
 				} else if ( data[i].type === 'dir' ) {
@@ -138,9 +148,9 @@ function parsePath( path, ghrepo ) {
 
 function parseContent ( path, ghrepo, callback ) {
 
-	var rawHeader = { Accept: 'application/vnd.github.beta.raw+json' };
-	var rawPath = "https://api.github.com/repos/" + repoName + "/contents/" + path;
-	var options = {
+	var rawHeader = { Accept: 'application/vnd.github.beta.raw+json' },
+	    rawPath = "https://api.github.com/repos/" + repoName + "/contents/" + path,
+	    options = {
 		uri: rawPath,
 		headers: rawHeader
 	};
@@ -151,8 +161,8 @@ function parseContent ( path, ghrepo, callback ) {
 			console.log ( error + path );
 		}
 
-		var tempObj = yamlFront.parse( rawContent.body );
-		var parsedObj = {
+		var tempObj = yamlFront.parse( rawContent.body ),
+		    parsedObj = {
 			title: tempObj.attributes.title,
 			path: path.replace(".markdown","").replace("index",""),
 			content: tempObj.body,
@@ -168,10 +178,10 @@ function parseContent ( path, ghrepo, callback ) {
 function indexDoc ( fileObj ) {
 
 	// Index to Searchify
-	/*searchifyClient.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
+	searchifyClient.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
 		console.log ( 'index error: ' + err );
 		console.log( "Indexed " + fileObj.path );
-	});*/
+	});
 
 	var pathArr = fileObj.path.split('/');
 	var cat = '';
@@ -262,9 +272,8 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 
 					var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight, 'children': [] };
 					menuArray.push ( newMenuObj );
-					//console.log ( newMenuObj.path );
-
 					buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, forCallback );
+
 				});
 			}
 		} else {
@@ -277,7 +286,6 @@ function sortMenu ( menuArr2, callback ) {
 	async.sortBy ( menuArr2, function ( item, sortCallback ) {
 		if ( item.children ) {
 			if ( item.children.length > 0 ) {
-				console.log ('sorting inner');
 				sortMenu ( item.children, function ( results ) { 
 					item.children = results;
 					sortCallback ( null, item.weight );
@@ -294,13 +302,27 @@ function sortMenu ( menuArr2, callback ) {
 	});
 }
 
-function saveMenu ( menuArr ) {
-	var newMenu = new Menu ({ 
-		menuArray: menuArr
-	});
-	newMenu.save( function ( err ) {
-		if ( err ) return handleError ( err );
-		console.log ( ' new menu saved to mongodb' + menuArr );
+function saveMenu ( menuArr, callback ) {
+
+	Menu.findOne( { 'title': 'menu' }, function ( err, menu ) {
+
+		if ( menu ) {
+			console.log ( 'updating menu');
+			menu.menuArray = menuArr ;
+		} else {
+			console.log ( 'saving new menu' );
+			var menu = new Menu ({ 
+				title: "menu",
+				menuArray: menuArr
+			});
+		}
+
+		menu.save( function ( err ) {
+			if ( err ) return handleError ( err );
+			console.log ( ' new menu saved to mongodb' );
+			callback ();
+		});
+
 	});
 }
 

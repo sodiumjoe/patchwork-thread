@@ -167,8 +167,12 @@ function parseContent ( path, ghrepo, callback ) {
 			path: path.replace(".markdown","").replace("index",""),
 			content: tempObj.body,
 			docid: path.replace(".markdown","").replace(/\//g,'-'),
-			weight: tempObj.attributes.weight || 0
+			weight: tempObj.attributes.weight || 0,
 		};
+	    
+	    if ( tempObj.attributes.redirect ) {
+			parsedObj.redirect = tempObj.attributes.redirect;
+		}
 
 		callback ( parsedObj );
 
@@ -178,51 +182,54 @@ function parseContent ( path, ghrepo, callback ) {
 function indexDoc ( fileObj ) {
 
 	// Index to Searchify
-	searchifyClient.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
-		if ( err ) {
-			console.log ( 'error while indexing ' + fileObj.path + ': ' + err );
-		} else {
-			console.log( "Indexed " + fileObj.path );
-		}
-	});
+	if ( !fileObj.redirect ) {
+		searchifyClient.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
+			if ( err ) {
+				console.log ( 'error while indexing ' + fileObj.path + ': ' + err );
+			} else {
+				console.log( "Indexed " + fileObj.path );
+			}
+		});
 
-	var pathArr = fileObj.path.split('/');
-	var cat = '';
-	for ( i = 0; i < pathArr.length - 1; i++ ) {
-		cat += pathArr[i];
-		if ( i < pathArr.length - 2 ) {
-			cat += '.';
+		var pathArr = fileObj.path.split('/');
+		var cat = '';
+		for ( i = 0; i < pathArr.length - 1; i++ ) {
+			cat += pathArr[i];
+			if ( i < pathArr.length - 2 ) {
+				cat += '.';
+			}
 		}
+
+		// Index to MongoDB
+		Doc.findOne ( { 'path': fileObj.path } , function ( err, doc ) {
+
+			if ( doc ) {
+				doc.title = fileObj.title;
+				doc.body = fileObj.content;
+				doc.path = fileObj.path;
+				doc.category = cat;
+				doc.save( function ( err ) {
+					if ( err ) return handleError ( err );
+					console.log ( fileObj.path + ' doc updated to mongodb' + 'category: ' + cat );
+				});
+			} else {
+
+				var newDoc = new Doc ({ 
+					title: fileObj.title,
+					body: fileObj.content,
+					path: fileObj.path,
+					category: cat
+				});
+
+				newDoc.save( function ( err ) {
+					if ( err ) return handleError ( err );
+					console.log ( fileObj.path + ' new doc saved to mongodb' + 'category: ' + cat );
+				});
+			}
+		});
+	} else { 
+		console.log ( 'skipped redirect: ' + fileObj.path );
 	}
-
-	// Index to MongoDB
-	Doc.findOne ( { 'path': fileObj.path } , function ( err, doc ) {
-
-		if ( doc ) {
-			doc.title = fileObj.title;
-			doc.body = fileObj.content;
-			doc.path = fileObj.path;
-			doc.category = cat;
-			doc.save( function ( err ) {
-				if ( err ) return handleError ( err );
-				console.log ( fileObj.path + ' doc updated to mongodb' + 'category: ' + cat );
-			});
-		} else {
-
-			var newDoc = new Doc ({ 
-				title: fileObj.title,
-				body: fileObj.content,
-				path: fileObj.path,
-				category: cat
-			});
-
-			newDoc.save( function ( err ) {
-				if ( err ) return handleError ( err );
-				console.log ( fileObj.path + ' new doc saved to mongodb' + 'category: ' + cat );
-			});
-		}
-	});
-
 }
 
 function deindexDoc ( path ) {

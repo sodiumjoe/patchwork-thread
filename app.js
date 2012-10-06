@@ -86,7 +86,7 @@ app.post( '/pusher', function( req, res ) {
 			deindexDoc( removed[i] );
 		}
 
-
+		indexMenu ();
 
     } catch (err) {
 		console.log("Error:", err);
@@ -97,30 +97,13 @@ app.post( '/pusher', function( req, res ) {
 
 app.get('/index', function(req, res){
     console.log('index request received');
-	parsePath( rootPath, ghrepo );
-	var menuArr = [];
-	buildMenu( rootPath, ghrepo, [], function () {
-		sortMenu ( menuArr, function ( sortedMenu ) {
-			saveMenu ( sortedMenu, function () {
-				console.log ( 'done' );
-			});
-		});
-	});
-
 	res.send( "index request received for " + repoName );
+	parsePath( rootPath, ghrepo );
+	indexMenu ();
 });
 
 app.get('/menu', function(req, res){
-	var menuArr = [];
-    console.log('menu index request received');
-	res.send( "index request received for " + repoName );
-	buildMenu( rootPath, ghrepo, menuArr, function () {
-		sortMenu ( menuArr, function ( sortedMenu ) {
-			saveMenu ( sortedMenu, function () {
-				console.log ( 'menu saved' );
-			});
-		});
-	});
+	indexMenu ();
 });
 
 app.get('/getmenu', function ( req, res ) {
@@ -133,12 +116,10 @@ app.get('/getmenu', function ( req, res ) {
 });
 
 function parsePath( path, ghrepo ) {
-	ghrepo.contents(path, function ( err, data ) {
+	ghrepo.contents( path, function ( err, data ) {
 
 		if ( err ) {
-
 			console.log ( err )
-
 		} else {
 
 			for ( i = 0; i < data.length; i++ ) {
@@ -167,41 +148,46 @@ function parsePath( path, ghrepo ) {
 
 function parseContent ( path, ghrepo, callback ) {
 
-	var rawHeader = { Accept: 'application/vnd.github.beta.raw+json' },
-	    rawPath = "https://api.github.com/repos/" + repoName + "/contents/" + path,
-	    options = {
-		uri: rawPath,
-		headers: rawHeader
-	};
+	ghrepo.contents( path, function ( err, data ) {
 
-	request( options, function ( error, rawContent, body ) {
+		if ( data.type === 'file' ) {
+			var rawHeader = { Accept: 'application/vnd.github.beta.raw+json' },
+				rawPath = "https://api.github.com/repos/" + repoName + "/contents/" + path,
+				options = {
+					uri: rawPath,
+					headers: rawHeader
+				};
 
-		if ( error ) {
-			console.log ( error + path );
+			request( options, function ( error, rawContent, body ) {
+
+				if ( error ) {
+					console.log ( error + path );
+				}
+
+				var tempObj = yamlFront.parse( rawContent.body ),
+					parsedObj = {
+						title: tempObj.attributes.title,
+						path: path.replace(".markdown","").replace("index",""),
+						content: tempObj.body,
+						docid: path.replace(".markdown","").replace(/\//g,'-'),
+						weight: tempObj.attributes.weight || 0
+					};
+				
+				if ( tempObj.attributes.redirect ) {
+					parsedObj.redirect = tempObj.attributes.redirect;
+				}
+				callback ( parsedObj );
+			});	
 		}
-
-		var tempObj = yamlFront.parse( rawContent.body ),
-		    parsedObj = {
-			title: tempObj.attributes.title,
-			path: path.replace(".markdown","").replace("index",""),
-			content: tempObj.body,
-			docid: path.replace(".markdown","").replace(/\//g,'-'),
-			weight: tempObj.attributes.weight || 0,
-		};
-	    
-	    if ( tempObj.attributes.redirect ) {
-			parsedObj.redirect = tempObj.attributes.redirect;
-		}
-
-		callback ( parsedObj );
-
-	});	
+	});
 }
 
 function indexDoc ( fileObj ) {
 
 	// Ignore redirect files
-	if ( !fileObj.redirect ) {
+	if ( fileObj.redirect ) { 
+		console.log ( 'skipped redirect: ' + fileObj.path );
+	} else {
 
 		if ( searchify.url !== null ) {
 
@@ -253,8 +239,6 @@ function indexDoc ( fileObj ) {
 				});
 			}
 		});
-	} else { 
-		console.log ( 'skipped redirect: ' + fileObj.path );
 	}
 }
 
@@ -274,6 +258,21 @@ function deindexDoc ( path ) {
 	});
 
 	Doc.find ( { 'path': path.replace('.markdown','') } ).remove();
+}
+
+function indexMenu ( callback ) {
+	var menuArr = [];
+    console.log('menu index request received');
+	buildMenu( rootPath, ghrepo, menuArr, function () {
+		sortMenu ( menuArr, function ( sortedMenu ) {
+			saveMenu ( sortedMenu, function () {
+				console.log ( 'menu saved' );
+				if ( callback ) {
+					callback();
+				}
+			});
+		});
+	});
 }
 
 function buildMenu ( path, ghrepo, menuArray, callback ) {
@@ -313,7 +312,7 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 
 				parseContent( item.path + '/overview.markdown', ghrepo, function ( parsedObj ) {
 
-					var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight, 'children': [] };
+					var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path.replace('/overview',''), 'weight': parsedObj.weight, 'children': [] };
 					menuArray.push ( newMenuObj );
 					buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, forCallback );
 

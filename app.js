@@ -86,6 +86,7 @@ app.post( '/pusher', function( req, res ) {
 app.get('/index', function(req, res){
     console.log('index request received');
 	parsePath( rootPath, ghrepo );
+	var menuArr = [];
 	buildMenu( rootPath, ghrepo, [], function () {
 		sortMenu ( menuArr, function ( sortedMenu ) {
 			saveMenu ( sortedMenu, function () {

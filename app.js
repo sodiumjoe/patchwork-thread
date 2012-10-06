@@ -268,9 +268,16 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 
 				parseContent( item.path, ghrepo, function ( parsedObj ) {
 
-					var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight };
-					if ( newMenuObj.path.substring ( newMenuObj.path.length - 8, newMenuObj.path.length ) === 'overview' ) {
-						newMenuObj.weight = 0;
+					//handle redirect files
+					if ( parsedObj.redirect ) {
+						var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.redirect, 'weight': parsedObj.weight };
+
+					} else {
+
+						var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight };
+						if ( newMenuObj.path.substring ( newMenuObj.path.length - 8, newMenuObj.path.length ) === 'overview' ) {
+							newMenuObj.weight = 0;
+						}
 					}
 					menuArray.push ( newMenuObj );
 					forCallback ( null );

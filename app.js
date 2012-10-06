@@ -179,8 +179,11 @@ function indexDoc ( fileObj ) {
 
 	// Index to Searchify
 	searchifyClient.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
-		console.log ( 'index error: ' + err );
-		console.log( "Indexed " + fileObj.path );
+		if ( err ) {
+			console.log ( 'error while indexing ' + fileObj.path + ': ' + err );
+		} else {
+			console.log( "Indexed " + fileObj.path );
+		}
 	});
 
 	var pathArr = fileObj.path.split('/');

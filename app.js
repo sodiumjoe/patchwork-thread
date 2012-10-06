@@ -1,6 +1,3 @@
-var nconf = require ( 'nconf' );
-nconf.env().file ( { file: './config.json' } );
-
 var request = require( 'request' ),
     Converter = require('./lib/pagedown/Markdown.Converter').Converter,
     converter = new Converter (),
@@ -10,8 +7,10 @@ var request = require( 'request' ),
     app = express.createServer(),
     yamlFront = require('./lib/yamlFront'),
     mongoose = require('mongoose'),
+    nconf = require ( 'nconf' );
 
-	searchify = nconf.get ( 'searchify' ),
+nconf.env().file ( { file: './config.json' } );
+var searchify = nconf.get ( 'searchify' ),
 	githubconf = nconf.get ( 'github' ),
     repoName = githubconf.user + '/' + githubconf.repo,
 	rootPath = nconf.get ( 'rootPath' );
@@ -20,20 +19,17 @@ if ( searchify.url === null ) {
 	searchify.url = process.env[searchify.privateEnvVar] || null;
 }
 
-    searchifyClient = restify.createJsonClient({
+var searchifyClient = restify.createJsonClient ({
 		url: searchify.url
 	}),
-
     github = require ( 'octonode' ),
     client = github.client (),
     ghrepo = client.repo ( repoName ),
 	docsColl = mongoose.createConnection('localhost', nconf.get ( 'db' ) );
 
-console.log ( searchify.url + ' ' + searchify.index + ' ' + repoName );
+app.use( express.logger() );
 
-app.use(express.logger());
-
-docsColl.on('error', console.error.bind(console, 'connection error:'));
+docsColl.on( 'error', console.error.bind ( console, 'connection error:' ));
 docsColl.once( 'open', function () {
 	console.log ( 'connected to mongodb');
 });

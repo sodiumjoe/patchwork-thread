@@ -112,11 +112,10 @@ app.get('/menu', function(req, res){
 
 app.get('/getmenu', function ( req, res ) {
 	Menu.find( { 'title': 'menu' }, function ( err, menu ) {
-		console.log ( menu );
 		if ( err ) {
 			console.log ( err );
 		}
-		res.send ( JSON.stringify ( menu ) );
+		res.send ( menu[0].menuArray );
 	});
 });
 

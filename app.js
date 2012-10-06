@@ -1,9 +1,9 @@
-var nconf = require('nconf');
-nconf.env().file({ file: './config.json' });
+var nconf = require ( 'nconf' );
+nconf.env().file ( { file: './config.json' } );
 
-var request = require('request'),
+var request = require( 'request' ),
     Converter = require('./lib/pagedown/Markdown.Converter').Converter,
-    converter = new Converter(),
+    converter = new Converter (),
     restify = require('restify'),
     async = require('async'),
     express = require('express'),
@@ -133,25 +133,32 @@ app.get('/getmenu', function ( req, res ) {
 });
 
 function parsePath( path, ghrepo ) {
-	ghrepo.contents(path, function (err, data) {
+	ghrepo.contents(path, function ( err, data ) {
 
-		for ( i = 0; i < data.length; i++ ) {
+		if ( err ) {
 
-			// ignore dotfiles and contents
-			if ( data[i].path.substring( 0, 1 ) !== '.' && data[i].name !=='contents') {
+			console.log ( err )
 
-				if ( data[i].type === 'file' ) {
+		} else {
 
-					if ( data[i].path.substring( 0, 1 ) === '/' ) {
-						data[i].path = data[i].path.substring( 1 );
+			for ( i = 0; i < data.length; i++ ) {
+
+				// ignore dotfiles 
+				if ( data[i].path.substring( 0, 1 ) !== '.' ) {
+
+					if ( data[i].type === 'file' ) {
+
+						if ( data[i].path.substring( 0, 1 ) === '/' ) {
+							data[i].path = data[i].path.substring( 1 );
+						}
+
+						parseContent( data[i].path, ghrepo, indexDoc );
+
+					} else if ( data[i].type === 'dir' ) {
+
+						parsePath( data[i].path, ghrepo );
+
 					}
-
-					parseContent( data[i].path, ghrepo, indexDoc );
-
-				} else if ( data[i].type === 'dir' ) {
-
-					parsePath( data[i].path, ghrepo );
-
 				}
 			}
 		}

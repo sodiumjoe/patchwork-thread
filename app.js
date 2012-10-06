@@ -16,8 +16,8 @@ var request = require( 'request' ),
     repoName = githubconf.user + '/' + githubconf.repo,
 	rootPath = nconf.get ( 'rootPath' );
 
-if ( searchify.url === '' ) {
-	searchify.url = process.env[searchify.privateEnvVar] || '';
+if ( searchify.url === null ) {
+	searchify.url = process.env[searchify.privateEnvVar] || null;
 }
 
     searchifyClient = restify.createJsonClient({
@@ -200,23 +200,30 @@ function parseContent ( path, ghrepo, callback ) {
 
 function indexDoc ( fileObj ) {
 
-	// Index to Searchify
+	// Ignore redirect files
 	if ( !fileObj.redirect ) {
-		searchifyClient.put('/v1/indexes/' + searchify.index + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
-			if ( err ) {
-				console.log ( 'error while indexing ' + fileObj.path + ': ' + err );
-			} else {
-				console.log( "Indexed " + fileObj.path );
-			}
-		});
 
-		var pathArr = fileObj.path.split('/');
-		var cat = '';
-		for ( i = 0; i < pathArr.length - 1; i++ ) {
-			cat += pathArr[i];
-			if ( i < pathArr.length - 2 ) {
-				cat += '.';
+		if ( searchify.url !== null ) {
+
+			// Index to Searchify
+			searchifyClient.put('/v1/indexes/' + searchify.index + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
+				if ( err ) {
+					console.log ( 'error while indexing ' + fileObj.path + ': ' + err );
+				} else {
+					console.log( "Indexed " + fileObj.path );
+				}
+			});
+
+			var pathArr = fileObj.path.split('/');
+			var cat = '';
+			for ( i = 0; i < pathArr.length - 1; i++ ) {
+				cat += pathArr[i];
+				if ( i < pathArr.length - 2 ) {
+					cat += '.';
+				}
 			}
+		} else {
+			console.log ( 'searchify API URL not set, unable to index: ' + fileObj.path );
 		}
 
 		// Index to MongoDB

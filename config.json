@@ -1,0 +1,12 @@
+{
+	"searchify": {
+		"url": "", 
+		"index": "afdocs"
+	},
+	"github": {
+		"user": "joebadmo",
+		"repo": "afdocs-test"
+	},
+	"rootPath": "/",
+	"db": "test"
+}

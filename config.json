@@ -1,6 +1,7 @@
 {
 	"searchify": {
-		"url": "", 
+		"url": "",
+		"privateEnvVar": "SEARCHIFY_PRIVATE_URL", 
 		"index": "afdocs"
 	},
 	"github": {

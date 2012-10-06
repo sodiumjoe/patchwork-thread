@@ -17,7 +17,7 @@ var request = require('request'),
 	rootPath = nconf.get ( 'rootPath' );
 
 if ( searchify.url === '' ) {
-	searchify.url = process.env.SEARCHIFY_PRIVATE_API_URL;
+	searchify.url = process.env[searchify.privateEnvVar] || '';
 }
 
     searchifyClient = restify.createJsonClient({

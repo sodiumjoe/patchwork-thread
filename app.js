@@ -74,6 +74,7 @@ app.post( '/pusher', function( req, res ) {
 			deindexDoc( removed[i] );
 		}
 
+		indexMenu();
 
 
     } catch (err) {
@@ -85,30 +86,16 @@ app.post( '/pusher', function( req, res ) {
 
 app.get('/index', function(req, res){
     console.log('index request received');
+	res.send( "index request received for " + repoName );
 	parsePath( rootPath, ghrepo );
 	var menuArr = [];
-	buildMenu( rootPath, ghrepo, [], function () {
-		sortMenu ( menuArr, function ( sortedMenu ) {
-			saveMenu ( sortedMenu, function () {
-				console.log ( 'done' );
-			});
-		});
-	});
-
-	res.send( "index request received for " + repoName );
+	indexMenu();
 });
 
 app.get('/menu', function(req, res){
-	var menuArr = [];
     console.log('menu index request received');
 	res.send( "index request received for " + repoName );
-	buildMenu( rootPath, ghrepo, menuArr, function () {
-		sortMenu ( menuArr, function ( sortedMenu ) {
-			saveMenu ( sortedMenu, function () {
-				console.log ( 'menu saved' );
-			});
-		});
-	});
+	indexMenu();
 });
 
 app.get('/getmenu', function ( req, res ) {
@@ -248,6 +235,21 @@ function deindexDoc ( path ) {
 	});
 
 	Doc.find ( { 'path': path.replace('.markdown','') } ).remove();
+}
+
+function indexMenu ( callback ) {
+	var menuArr = [];
+	buildMenu( rootPath, ghrepo, [], function () {
+		sortMenu ( menuArr, function ( sortedMenu ) {
+			saveMenu ( sortedMenu, function () {
+				console.log ( 'done' );
+				if ( callback ) {
+					callback ();
+				}
+			});
+		});
+	});
+
 }
 
 function buildMenu ( path, ghrepo, menuArray, callback ) {

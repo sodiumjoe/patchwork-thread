@@ -78,7 +78,11 @@ app.post( '/pusher', function( req, res ) {
 				if ( err ) {
 					console.log ( err );
 				} else {
-					indexDoc ( parsedObj );
+					indexDoc ( parsedObj, function ( err ) {
+						if ( err ) {
+							console.log ( err );
+						}
+					});
 				}
 			});
 		}
@@ -144,7 +148,9 @@ function parsePath ( path, ghrepo, callback ) {
 								if ( err ) {
 									forCallback ( err );
 								} else {
-									indexDoc ( parsedObj );
+									indexDoc ( parsedObj, function ( err ) {
+										forCallback ( err );
+									});
 								}
 							});
 						} else if ( item.type === 'dir' ) {
@@ -222,7 +228,7 @@ function indexDoc ( fileObj, callback ) {
 			// Index to Searchify
 			searchifyClient.put('/v1/indexes/' + searchify.index + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
 				if ( err ) {
-					console.log ( 'error while indexing ' + fileObj.path + ': ' + err );
+					callback ( err );
 				} else {
 					console.log( "Indexed " + fileObj.path );
 				}
@@ -243,28 +249,35 @@ function indexDoc ( fileObj, callback ) {
 		// Index to MongoDB
 		Doc.findOne ( { 'path': fileObj.path } , function ( err, doc ) {
 
-			if ( doc ) {
-				doc.title = fileObj.title;
-				doc.body = fileObj.content;
-				doc.path = fileObj.path;
-				doc.category = cat;
-				doc.save( function ( err ) {
-					if ( err ) return handleError ( err );
-					console.log ( fileObj.path + ' doc updated to mongodb' + 'category: ' + cat );
-				});
+			if ( err ) {
+				callback ( err );
 			} else {
+				if ( doc ) {
+					doc.title = fileObj.title;
+					doc.body = fileObj.content;
+					doc.path = fileObj.path;
+					doc.category = cat;
+					doc.save( function ( err ) {
+						if ( err ) return handleError ( err );
+						console.log ( fileObj.path + ' doc updated to mongodb' + 'category: ' + cat );
+					});
+				} else {
 
-				var newDoc = new Doc ({ 
-					title: fileObj.title,
-					body: fileObj.content,
-					path: fileObj.path,
-					category: cat
-				});
+					var newDoc = new Doc ({ 
+						title: fileObj.title,
+						body: fileObj.content,
+						path: fileObj.path,
+						category: cat
+					});
 
-				newDoc.save( function ( err ) {
-					if ( err ) return handleError ( err );
-					console.log ( fileObj.path + ' new doc saved to mongodb' + 'category: ' + cat );
-				});
+					newDoc.save( function ( err ) {
+						if ( err ) {
+							callback ( err );
+						} else {
+							console.log ( fileObj.path + ' new doc saved to mongodb' + 'category: ' + cat );
+						}
+					});
+				}
 			}
 		});
 	}

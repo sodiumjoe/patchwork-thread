@@ -1,23 +1,35 @@
+var nconf = require('nconf');
+nconf.env().file({ file: './config.json' });
+
 var request = require('request'),
-    Converter = require("./lib/pagedown/Markdown.Converter").Converter,
+    Converter = require('./lib/pagedown/Markdown.Converter').Converter,
     converter = new Converter(),
     restify = require('restify'),
-    searchifyURL = process.env.SEARCHIFY_PRIVATE_API_URL,
-    searchifyClient = restify.createJsonClient({
-		url: searchifyURL
-	}),
     async = require('async'),
     express = require('express'),
     app = express.createServer(),
-    searchifyIndexName = 'afdocs',
     yamlFront = require('./lib/yamlFront'),
-    repoName = 'joebadmo/afdocs-test',
-    github = require('octonode'),
-    client = github.client(),
-    ghrepo = client.repo(repoName),
     mongoose = require('mongoose'),
-	docsColl = mongoose.createConnection('localhost', 'test'),
-	rootPath = '/';
+
+	searchify = nconf.get ( 'searchify' ),
+	githubconf = nconf.get ( 'github' ),
+    repoName = githubconf.user + '/' + githubconf.repo,
+	rootPath = nconf.get ( 'rootPath' );
+
+if ( searchify.url === '' ) {
+	searchify.url = process.env[searchify.privateEnvVar] || '';
+}
+
+    searchifyClient = restify.createJsonClient({
+		url: searchify.url
+	}),
+
+    github = require ( 'octonode' ),
+    client = github.client (),
+    ghrepo = client.repo ( repoName ),
+	docsColl = mongoose.createConnection('localhost', nconf.get ( 'db' ) );
+
+console.log ( searchify.url + ' ' + searchify.index + ' ' + repoName );
 
 app.use(express.logger());
 
@@ -170,7 +182,7 @@ function indexDoc ( fileObj ) {
 
 	// Index to Searchify
 	if ( !fileObj.redirect ) {
-		searchifyClient.put('/v1/indexes/' + searchifyIndexName + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
+		searchifyClient.put('/v1/indexes/' + searchify.index + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
 			if ( err ) {
 				console.log ( 'error while indexing ' + fileObj.path + ': ' + err );
 			} else {
@@ -222,12 +234,12 @@ function indexDoc ( fileObj ) {
 function deindexDoc ( path ) {
 
 	var options = {
-		uri: searchifyURL,
+		uri: searchify.url,
 		method: 'DELETE',
 		qs: 'docid=' + path.replace('.markdown','').replace('/', '-')
 	};
 
-	var delPath = '/v1/indexes/' + searchifyIndexName + '/docs/?' + 'docid=' + path;
+	var delPath = '/v1/indexes/' + searchify.index + '/docs/?' + 'docid=' + path;
 
 	searchifyClient.del( delPath, function(err, req, res) {
 		console.log( err );

@@ -1,0 +1,13 @@
+{
+	"searchify": {
+		"url": "",
+		"privateEnvVar": "SEARCHIFY_PRIVATE_URL", 
+		"index": "afdocs"
+	},
+	"github": {
+		"user": "joebadmo",
+		"repo": "afdocs-test"
+	},
+	"rootPath": "/",
+	"db": "test"
+}

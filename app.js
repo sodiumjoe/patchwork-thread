@@ -84,60 +84,71 @@ app.post( '/pusher', function( req, res ) {
 
 		indexMenu ();
 
-    } catch (err) {
-		console.log("Error:", err);
+    } catch ( err ) {
+		console.log ( "Error:", err );
     }
 
-    res.send('Done with post');	
+    res.send ( 'Done with post' );	
 });
 
-app.get('/index', function(req, res){
-    console.log('index request received');
-	res.send( "index request received for " + repoName );
-	parsePath( rootPath, ghrepo );
+app.get ( '/index', function ( req, res ) {
+    console.log ( 'index request received' );
+	res.send ( "index request received for " + repoName );
+	parsePath ( rootPath, ghrepo, null );
 	indexMenu ();
 });
 
-app.get('/menu', function(req, res){
+app.get ( '/menu', function ( req, res ) {
 	indexMenu ();
 });
 
-app.get('/getmenu', function ( req, res ) {
+app.get ( '/getmenu', function ( req, res ) {
 	Menu.find( { 'title': 'menu' }, function ( err, menu ) {
 		if ( err ) {
 			console.log ( err );
+		} else {
+			res.send ( menu[0].menuArray );
 		}
-		res.send ( menu[0].menuArray );
 	});
 });
 
-function parsePath( path, ghrepo ) {
-	ghrepo.contents( path, function ( err, data ) {
+function parsePath ( path, ghrepo, callback ) {
+	ghrepo.contents ( path, function ( err, data ) {
 
 		if ( err ) {
-			console.log ( err )
-		} else {
-
-			for ( i = 0; i < data.length; i++ ) {
-
-				// ignore dotfiles 
-				if ( data[i].path.substring( 0, 1 ) !== '.' ) {
-
-					if ( data[i].type === 'file' ) {
-
-						if ( data[i].path.substring( 0, 1 ) === '/' ) {
-							data[i].path = data[i].path.substring( 1 );
-						}
-
-						parseContent( data[i].path, ghrepo, indexDoc );
-
-					} else if ( data[i].type === 'dir' ) {
-
-						parsePath( data[i].path, ghrepo );
-
-					}
-				}
+			if ( callback ) {
+				callback ( err )
+			} else {
+				console.log ( err );
 			}
+		} else {
+			async.forEach ( data, 
+				function ( item, forCallback ) {
+					if ( item.path.substring ( 0, 1 ) !== '.' ) {
+						if ( item.type === 'file' ) {
+							console.log ( item.path );
+							if ( item.path.substring ( 0, 1 ) === '/' ) {
+								item.path = item.path.substring ( 1 );
+							}
+							parseContent ( item.path, ghrepo, indexDoc );
+						} else if ( item.type === 'dir' ) {
+							parsePath ( item.path, ghrepo, forCallback );
+						}
+					}
+
+					forCallback ( null );
+				}, 
+				function ( err ) {
+					if ( err ) {
+						if ( callback ) {
+							callback ( err );
+						} else { 
+							console.log ( err );
+						}
+					} else {
+						callback ( null );
+					}
+			});
 		}
 	});
 }
@@ -342,9 +353,13 @@ function sortMenu ( menuArr2, callback ) {
 
 function saveMenu ( menuArr, callback ) {
 
-	Menu.findOne( { 'title': 'menu' }, function ( err, menu ) {
+	Menu.findOne ( { 'title': 'menu' }, function ( err, menu ) {
 
-		if ( menu ) {
+		if ( err ) {
+
+			callback ( err );
+
+		} else if ( menu ) {
 			console.log ( 'updating menu');
 			menu.menuArray = menuArr ;
 		} else {
@@ -355,13 +370,16 @@ function saveMenu ( menuArr, callback ) {
 			});
 		}
 
-		menu.save( function ( err ) {
-			if ( err ) return handleError ( err );
-			console.log ( ' new menu saved to mongodb' );
-			callback ();
+		menu.save ( function ( err ) {
+			if ( err ) {
+				callback ( err );
+			} else {
+				console.log ( ' new menu saved to mongodb' );
+				callback ( null );
+			}
 		});
 
 	});
 }
 
-app.listen(process.env.VCAP_APP_PORT || 3000);
+app.listen ( process.env.VCAP_APP_PORT || 3000 );

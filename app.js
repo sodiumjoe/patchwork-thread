@@ -94,7 +94,11 @@ app.post( '/pusher', function( req, res ) {
 app.get ( '/index', function ( req, res ) {
     console.log ( 'index request received' );
 	res.send ( "index request received for " + repoName );
-	parsePath ( rootPath, ghrepo, null );
+	parsePath ( rootPath, ghrepo, function ( err ) { 
+		if ( err ) {
+			console.log ( err );
+		}
+	});
 	indexMenu ();
 });
 

@@ -74,7 +74,13 @@ app.post( '/pusher', function( req, res ) {
 
 		console.log ( "Updating: \n " + updates.toString() );
 		for ( i = 0; i < updates.length; i++ ) {
-			parseContent( updates[i], ghrepo, indexDoc );
+			parseContent( updates[i], ghrepo, function ( err, parsedObj ) {
+				if ( err ) {
+					console.log ( err );
+				} else {
+					indexDoc ( parsedObj );
+				}
+			});
 		}
 
 		console.log ( "Removing: \n " + removed.toString() );
@@ -134,7 +140,13 @@ function parsePath ( path, ghrepo, callback ) {
 							if ( item.path.substring ( 0, 1 ) === '/' ) {
 								item.path = item.path.substring ( 1 );
 							}
-							parseContent ( item.path, ghrepo, indexDoc );
+							parseContent ( item.path, ghrepo, function ( err, parsedObj ) { 
+								if ( err ) {
+									forCallback ( err );
+								} else {
+									indexDoc ( parsedObj );
+								}
+							});
 						} else if ( item.type === 'dir' ) {
 							parsePath ( item.path, ghrepo, forCallback );
 						}
@@ -161,39 +173,45 @@ function parseContent ( path, ghrepo, callback ) {
 
 	ghrepo.contents( path, function ( err, data ) {
 
-		if ( data.type === 'file' ) {
-			var rawHeader = { Accept: 'application/vnd.github.beta.raw+json' },
-				rawPath = "https://api.github.com/repos/" + repoName + "/contents/" + path,
-				options = {
-					uri: rawPath,
-					headers: rawHeader
-				};
+		if ( err ) {
+			callback ( err );
+		} else {
 
-			request( options, function ( error, rawContent, body ) {
-
-				if ( error ) {
-					console.log ( error + path );
-				}
-
-				var tempObj = yamlFront.parse( rawContent.body ),
-					parsedObj = {
-						title: tempObj.attributes.title,
-						path: path.replace(".markdown","").replace("index",""),
-						content: tempObj.body,
-						docid: path.replace(".markdown","").replace(/\//g,'-'),
-						weight: tempObj.attributes.weight || 0
+			if ( data.type === 'file' ) {
+				var rawHeader = { Accept: 'application/vnd.github.beta.raw+json' },
+					rawPath = "https://api.github.com/repos/" + repoName + "/contents/" + path,
+					options = {
+						uri: rawPath,
+						headers: rawHeader
 					};
-				
-				if ( tempObj.attributes.redirect ) {
-					parsedObj.redirect = tempObj.attributes.redirect;
-				}
-				callback ( parsedObj );
-			});	
+
+				request( options, function ( error, rawContent, body ) {
+
+					if ( error ) {
+						callback ( error );
+					} else {
+
+						var tempObj = yamlFront.parse( rawContent.body ),
+							parsedObj = {
+								title: tempObj.attributes.title,
+								path: path.replace(".markdown","").replace("index",""),
+								content: tempObj.body,
+								docid: path.replace(".markdown","").replace(/\//g,'-'),
+								weight: tempObj.attributes.weight || 0
+							};
+						
+						if ( tempObj.attributes.redirect ) {
+							parsedObj.redirect = tempObj.attributes.redirect;
+						}
+						callback ( null, parsedObj );
+					}
+				});	
+			}
 		}
 	});
 }
 
-function indexDoc ( fileObj ) {
+function indexDoc ( fileObj, callback ) {
 
 	// Ignore redirect files
 	if ( fileObj.redirect ) { 
@@ -201,7 +219,6 @@ function indexDoc ( fileObj ) {
 	} else {
 
 		if ( searchify.url !== null ) {
-
 			// Index to Searchify
 			searchifyClient.put('/v1/indexes/' + searchify.index + '/docs', { docid: fileObj.docid, fields: { text: fileObj.content, title: fileObj.title, path: fileObj.path } }, function( err, req, res, obj ) {
 				if ( err ) {
@@ -302,31 +319,39 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 					item.path = item.path.substring( 1 );
 				}
 
-				parseContent( item.path, ghrepo, function ( parsedObj ) {
-
-					//handle redirect files
-					if ( parsedObj.redirect ) {
-						var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.redirect, 'weight': parsedObj.weight };
-
+				parseContent( item.path, ghrepo, function ( err, parsedObj ) {
+					if ( err ) {
+						forCallback ( err );
 					} else {
 
-						var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight };
-						if ( newMenuObj.path.substring ( newMenuObj.path.length - 8, newMenuObj.path.length ) === 'overview' ) {
-							newMenuObj.weight = 0;
+						//handle redirect files
+						if ( parsedObj.redirect ) {
+							var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.redirect, 'weight': parsedObj.weight };
+
+						} else {
+
+							var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight };
+							if ( newMenuObj.path.substring ( newMenuObj.path.length - 8, newMenuObj.path.length ) === 'overview' ) {
+								newMenuObj.weight = 0;
+							}
 						}
+						menuArray.push ( newMenuObj );
+						forCallback ( null );
 					}
-					menuArray.push ( newMenuObj );
-					forCallback ( null );
 				});
 
 			} else if ( item.type === 'dir' ) {
 
-				parseContent( item.path + '/overview.markdown', ghrepo, function ( parsedObj ) {
+				parseContent( item.path + '/overview.markdown', ghrepo, function ( err, parsedObj ) {
 
-					var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path.replace('/overview',''), 'weight': parsedObj.weight, 'children': [] };
-					menuArray.push ( newMenuObj );
-					buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, forCallback );
+					if ( err ) {
+						forCallback ( err );
+					} else {
 
+						var newMenuObj = { 'title': parsedObj.title, 'path': parsedObj.path.replace('/overview',''), 'weight': parsedObj.weight, 'children': [] };
+						menuArray.push ( newMenuObj );
+						buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, forCallback );
+					}
 				});
 			}
 		} else {

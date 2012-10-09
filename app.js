@@ -87,7 +87,8 @@ app.post( '/pusher', function( req, res ) {
 					});
 				}
 			});
-		}, function ( err ) {
+		}, 
+		function ( err ) {
 			if ( err ) {
 				console.log ( err );
 			} else {
@@ -96,13 +97,20 @@ app.post( '/pusher', function( req, res ) {
 		});
 
 		console.log ( "Removing: \n " + removed.toString() );
-		for ( i = 0; i < removed.length; i++ ) {
-			deindexDoc( removed[i], function ( err ) {
+		async.forEach ( removed, function ( item, callback ) {
+			deindexDoc ( item, function ( err ) {
 				if ( err ) {
-					console.log ( err );
-				}
+					callback ( err );
+				} 
 			});
-		}
+		}, 
+		function ( err ) {
+			if ( err ) {
+				console.log ( err );
+			} else {
+				console.log ( 'Removals complete' );
+			}
+		});
 
 		indexMenu();
 
@@ -346,7 +354,11 @@ function indexMenu ( callback ) {
 
 function buildMenu ( path, ghrepo, menuArray, callback ) {
 	ghrepo.contents( path, function ( err, data ) {
-		async.forEach( data, parseMenuArray, callback );
+		async.forEach( data, parseMenuArray, function ( err ) {
+			if ( err ) {
+				callback ( err );
+			}
+		});
 	});
 
 	function parseMenuArray ( item, forCallback ) {
@@ -393,6 +405,8 @@ function buildMenu ( path, ghrepo, menuArray, callback ) {
 						buildMenu( parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, forCallback );
 					}
 				});
+			} else {
+				forCallback ( 'Error: unknown file type for "' + item.path + '"' );
 			}
 		} else {
 			forCallback ( null );

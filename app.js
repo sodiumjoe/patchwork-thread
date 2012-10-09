@@ -73,19 +73,27 @@ app.post( '/pusher', function( req, res ) {
 		var removed = lastCommit.removed;
 
 		console.log ( "Updating: \n " + updates.toString() );
-		for ( i = 0; i < updates.length; i++ ) {
-			parseContent( updates[i], ghrepo, function ( err, parsedObj ) {
+		async.forEach ( updates, function ( item, callback ) {
+			parseContent ( item, ghrepo, function ( err, parsedObj ) {
 				if ( err ) {
-					console.log ( err );
+					callback ( err );
 				} else {
 					indexDoc ( parsedObj, function ( err ) {
 						if ( err ) {
-							console.log ( err );
+							callback ( err );
+						} else {
+							callback ( null );
 						}
 					});
 				}
 			});
-		}
+		}, function ( err ) {
+			if ( err ) {
+				console.log ( err );
+			} else {
+				console.log ( "Updates complete" );
+			}
+		});
 
 		console.log ( "Removing: \n " + removed.toString() );
 		for ( i = 0; i < removed.length; i++ ) {

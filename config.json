@@ -1,13 +1,28 @@
 {
-	"searchify": {
-		"url": null,
-		"privateEnvVar": "SEARCHIFY_PRIVATE_URL", 
-		"index": "afdocs"
+	"config": [{
+		"searchify": {
+			"url": null,
+			"privateEnvVar": "SEARCHIFY_PRIVATE_URL", 
+			"index": "afdocs"
+		},
+		"github": {
+			"user": "joebadmo",
+			"repo": "afdocs-test"
+		},
+		"rootPath": "/",
+		"db": "test"
 	},
-	"github": {
-		"user": "joebadmo",
-		"repo": "afdocs-test"
-	},
-	"rootPath": "/",
-	"db": "test"
+	{
+		"searchify": {
+			"url": null,
+			"privateEnvVar": "SEARCHIFY_PRIVATE_URL", 
+			"index": "pfdocs"
+		},
+		"github": {
+			"user": "joebadmo",
+			"repo": "pfdocs-test"
+		},
+		"rootPath": "/",
+		"db": "test"
+	}]
 }

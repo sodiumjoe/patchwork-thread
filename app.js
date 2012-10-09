@@ -1,19 +1,26 @@
-var request = require( 'request' ),
-    Converter = require('./lib/pagedown/Markdown.Converter').Converter,
+var fs = require ( 'fs' ),
+    confData = fs.readFileSync ( './config.json' ),
+    request = require ( 'request' ),
+    Converter = require ( './lib/pagedown/Markdown.Converter' ).Converter,
     converter = new Converter (),
-    restify = require('restify'),
-    async = require('async'),
-    express = require('express'),
+    restify = require ( 'restify' ),
+    async = require ( 'async' ),
+    express = require ( 'express' ),
     app = express.createServer(),
-    yamlFront = require('./lib/yamlFront'),
-    mongoose = require('mongoose'),
-    nconf = require ( 'nconf' );
+    yamlFront = require ( './lib/yamlFront' ),
+    mongoose = require ( 'mongoose' );
 
-nconf.env().file ( { file: './config.json' } );
-var searchify = nconf.get ( 'searchify' ),
-	githubconf = nconf.get ( 'github' ),
+try {
+	var conf = JSON.parse ( confData ).config;
+} catch ( err ) {
+	console.log ( 'Error in config.json file:' );
+	console.log ( err );
+}
+
+var searchify = conf[0].searchify,
+	githubconf = conf[0].github,
     repoName = githubconf.user + '/' + githubconf.repo,
-	rootPath = nconf.get ( 'rootPath' );
+	rootPath = conf[0].rootPath;
 
 if ( searchify.url === null ) {
 	searchify.url = process.env[searchify.privateEnvVar] || null;
@@ -25,13 +32,13 @@ var searchifyClient = restify.createJsonClient ({
     github = require ( 'octonode' ),
     client = github.client (),
     ghrepo = client.repo ( repoName ),
-	docsColl = mongoose.createConnection('localhost', nconf.get ( 'db' ) );
+	docsColl = mongoose.createConnection('localhost', conf[0].db );
 
 app.use( express.logger() );
 
 docsColl.on( 'error', console.error.bind ( console, 'connection error:' ));
 docsColl.once( 'open', function () {
-	console.log ( 'connected to mongodb');
+	console.log ( 'connected to mongodb' );
 });
 
 var docSchema = new mongoose.Schema ({
@@ -281,7 +288,7 @@ function indexDoc ( fileObj, callback ) {
 					doc.body = fileObj.content;
 					doc.path = fileObj.path;
 					doc.category = cat;
-					doc.save( function ( err ) {
+					doc.save ( function ( err ) {
 						if ( err ) return handleError ( err );
 						console.log ( fileObj.path + ' doc updated to mongodb' + 'category: ' + cat );
 					});
@@ -354,11 +361,15 @@ function indexMenu ( callback ) {
 
 function buildMenu ( path, ghrepo, menuArray, callback ) {
 	ghrepo.contents( path, function ( err, data ) {
-		async.forEach( data, parseMenuArray, function ( err ) {
-			if ( err ) {
-				callback ( err );
-			}
-		});
+		if ( err ) {
+			callback ( err );
+		} else {
+			async.forEach( data, parseMenuArray, function ( err ) {
+				if ( err ) {
+					callback ( err );
+				}
+			});
+		}
 	});
 
 	function parseMenuArray ( item, forCallback ) {

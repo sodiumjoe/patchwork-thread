@@ -31,7 +31,6 @@ var searchifyClient = restify.createJsonClient ({
 	}),
     github = require ( 'octonode' ),
     client = github.client (),
-    ghrepo = client.repo ( repoName ),
 	docsColl = mongoose.createConnection('localhost', conf[0].db );
 
 app.use( express.logger() );
@@ -66,72 +65,85 @@ app.configure ( function ( ) {
 
 app.post( '/pusher', function( req, res ) {
     console.log( 'post received' );
+	var currentConf;
     try {
 		p = req.body.payload;
 		console.log(p);
 
 		var obj = JSON.parse(p);
 
-		var lastCommit = obj.commits[ obj.commits.length - 1 ];
-		
-		console.log ( "Last commit: \n" + lastCommit.id );
+		async.forEach ( conf, function ( item, callback ) {
+			if ( item.github.user === obj.repository.owner.name && item.github.repo === obj.repository.name ) {
+				currentConf = item;
+			}
+		},
+		function ( err ) {
 
-		var updates = lastCommit.added.concat( lastCommit.modified );
-		var removed = lastCommit.removed;
+			if ( err ) {
+				console.log ( err );
+			} else {
+				var lastCommit = obj.commits[ obj.commits.length - 1 ];
+				
+				console.log ( "Last commit: \n" + lastCommit.id );
 
-		console.log ( "Updating: \n " + updates.toString() );
-		async.forEach ( updates, function ( item, callback ) {
-			parseContent ( item, ghrepo, function ( err, parsedObj ) {
-				if ( err ) {
-					callback ( err );
-				} else {
-					indexDoc ( parsedObj, function ( err ) {
+				var updates = lastCommit.added.concat( lastCommit.modified );
+				var removed = lastCommit.removed;
+
+				console.log ( "Updating: \n " + updates.toString() );
+				async.forEach ( updates, function ( item, callback ) {
+					parseContent ( item, client.repo ( currentConf.github.user + '/' + currentConf.github.repo ), function ( err, parsedObj ) {
 						if ( err ) {
 							callback ( err );
 						} else {
-							callback ( null );
+							indexDoc ( parsedObj, function ( err ) {
+								if ( err ) {
+									callback ( err );
+								} else {
+									callback ( null );
+								}
+							});
 						}
 					});
-				}
-			});
-		}, 
-		function ( err ) {
-			if ( err ) {
-				console.log ( err );
-			} else {
-				console.log ( "Updates complete" );
+				}, 
+				function ( err ) {
+					if ( err ) {
+						console.log ( err );
+					} else {
+						console.log ( "Updates complete" );
+					}
+				});
+
+				console.log ( "Removing: \n " + removed.toString() );
+				async.forEach ( removed, function ( item, callback ) {
+					deindexDoc ( item, function ( err ) {
+						if ( err ) {
+							callback ( err );
+						} 
+					});
+				}, 
+				function ( err ) {
+					if ( err ) {
+						console.log ( err );
+					} else {
+						console.log ( 'Removals complete' );
+					}
+				});
+
+				indexMenu();
 			}
 		});
 
-		console.log ( "Removing: \n " + removed.toString() );
-		async.forEach ( removed, function ( item, callback ) {
-			deindexDoc ( item, function ( err ) {
-				if ( err ) {
-					callback ( err );
-				} 
-			});
-		}, 
-		function ( err ) {
-			if ( err ) {
-				console.log ( err );
-			} else {
-				console.log ( 'Removals complete' );
-			}
-		});
-
-		indexMenu();
-
-    } catch ( err ) {
+	} catch ( err ) {
 		console.log ( "Error:", err );
-    }
+	}
 
-    res.send ( 'Done with post' );	
+	res.send ( 'Done with post' );	
 });
 
 app.get ( '/index', function ( req, res ) {
     console.log ( 'index request received' );
 	res.send ( "index request received for " + repoName );
-	parsePath ( rootPath, ghrepo, function ( err ) { 
+	parsePath ( rootPath, client.repo ( conf[0].github.user + '/' + conf[0].github.repo ), function ( err ) { 
 		if ( err ) {
 			console.log ( err );
 		}
@@ -347,7 +359,7 @@ function deindexDoc ( path, callback ) {
 function indexMenu ( callback ) {
 	var menuArr = [];
     console.log( 'menu index request received' );
-	buildMenu( rootPath, ghrepo, menuArr, function () {
+	buildMenu( rootPath, client.repo ( "joebadmo/afdocs-test" ), menuArr, function () {
 		sortMenu ( menuArr, function ( sortedMenu ) {
 			saveMenu ( sortedMenu, function () {
 				console.log ( 'menu saved' );

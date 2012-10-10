@@ -14,6 +14,9 @@ try{
 	var conf = JSON.parse(confData).config;
 	async.forEach(conf, function(item, callback){
 		item.github.repoName = item.github.user + '/' + item.github.repo;
+		if(item.searchify.url === null){
+			item.searchify.url = process.env[item.searchify.privateEnvVar]|| null;
+		}
 	},
 	function(err){
 		if(err){
@@ -25,19 +28,13 @@ try{
 	console.log(err);
 }
 
+/*
 var searchify = conf[0].searchify,
 	githubconf = conf[0].github,
     //repoName = githubconf.user + '/' + githubconf.repo,
-	rootPath = conf[0].rootPath;
+	rootPath = conf[0].rootPath;*/
 
-if(searchify.url === null){
-	searchify.url = process.env[searchify.privateEnvVar]|| null;
-}
-
-var searchifyClient = restify.createJsonClient({
-		url: searchify.url
-	}),
-    github = require('octonode'),
+var github = require('octonode'),
     client = github.client(),
 	docsColl = mongoose.createConnection('localhost', conf[0].db);
 
@@ -187,17 +184,12 @@ app.get('/getmenu', function(req, res){
 function parsePath(path, ghrepo, currentConf, callback){
 	ghrepo.contents(path, function(err, data){
 		if(err){
-			if(callback){
-				callback(err);
-			}else{
-				console.log(err);
-			}
+			callback(err);
 		}else{
 			async.forEach(data, 
 				function(item, forCallback){
 					if(item.path.substring(0, 1)!== '.'){
 						if(item.type === 'file'){
-							console.log(item.path);
 							if(item.path.substring(0, 1)=== '/'){
 								item.path = item.path.substring(1);
 							}
@@ -282,10 +274,14 @@ function indexDoc(fileObj, currentConf, callback){
 	// Ignore redirect files
 	if(fileObj.redirect){
 		console.log('skipped redirect: ' + fileObj.path);
+		callback(null);
 	}else{
-
 		if(currentConf.searchify.url !== null){
 			// Index to Searchify
+			console.log ( fileObj.path );
+			var searchifyClient = restify.createJsonClient({
+					url: current.Conf.searchify.url
+				});
 			searchifyClient.put('/v1/indexes/' + currentConf.searchify.index + '/docs',{docid: fileObj.docid, fields:{text: fileObj.content, title: fileObj.title, path: fileObj.path}}, function(err, req, res, obj){
 				if(err){
 					callback(err);

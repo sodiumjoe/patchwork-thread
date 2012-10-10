@@ -155,8 +155,8 @@ app.get('/index/:conf', function(req, res){
 	}else{
 		var currentConf = conf[req.params.conf];
 		console.log('index request received');
-		res.send("index request received for " + currentConf.github.repoName);
-		parsePath(rootPath, client.repo(currentConf.github.repoName), currentConf, function(err){
+		res.send('index request received for ' + currentConf.github.repoName);
+		parsePath(currentConf.rootPath, client.repo(currentConf.github.repoName), currentConf, function(err){
 			if(err){
 				console.log(err);
 			}
@@ -186,10 +186,9 @@ app.get('/getmenu', function(req, res){
 
 function parsePath(path, ghrepo, currentConf, callback){
 	ghrepo.contents(path, function(err, data){
-
 		if(err){
 			if(callback){
-				callback(err)
+				callback(err);
 			}else{
 				console.log(err);
 			}
@@ -202,7 +201,7 @@ function parsePath(path, ghrepo, currentConf, callback){
 							if(item.path.substring(0, 1)=== '/'){
 								item.path = item.path.substring(1);
 							}
-							parseContent(item.path, ghrepo, currentConf, function(err, parsedObj){
+							parseContent(item.path, ghrepo, currentConf.github.repoName, function(err, parsedObj){
 								if(err){
 									forCallback(err);
 								}else{
@@ -212,11 +211,13 @@ function parsePath(path, ghrepo, currentConf, callback){
 								}
 							});
 						}else if(item.type === 'dir'){
-							parsePath(item.path, ghrepo, currentConf, forCallback);
+							parsePath(item.path, ghrepo, currentConf, function(err){
+								forCallback(null);
+							});
 						}
+					}else{
+						forCallback(null);
 					}
-
-					forCallback(null);
 				}, 
 				function(err){
 					if(err){
@@ -234,29 +235,24 @@ function parsePath(path, ghrepo, currentConf, callback){
 }
 
 function parseContent(path, ghrepo, repoName, callback){
-
 	ghrepo.contents(path, function(err, data){
-
 		if(err){
 			callback(err);
 		}else{
-
 			if(data.type === 'file'){
 				var rawHeader = {Accept: 'application/vnd.github.beta.raw+json'},
-					rawPath = "https://api.github.com/repos/" + repoName + "/contents/" + path,
+					rawPath = 'https://api.github.com/repos/' + repoName + '/contents/' + path,
 					options = {
 						uri: rawPath,
 						headers: rawHeader
 					};
-
-				request(options, function(error, rawContent, body){
-
-					if(error){
-						callback(error);
+				request(options, function(err2, rawContent, body){
+					if(err2){
+						callback(err2);
 					}else{
-						yamlFront.parse(rawContent.body, function(err, tempObj){
-							if(err){
-								callback(err + path);
+						yamlFront.parse(rawContent.body, function(err3, tempObj){
+							if(err3){
+								callback(err3 + path);
 							}else{
 								var parsedObj ={
 									title: tempObj.attributes.title,
@@ -274,6 +270,8 @@ function parseContent(path, ghrepo, repoName, callback){
 						});
 					}
 				});	
+			}else{
+				callback('Not a file: ' + path);
 			}
 		}
 	});

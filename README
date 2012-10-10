@@ -1,0 +1,4 @@
+Indexer
+=======
+
+This is an app that takes a collection of markdown files in a simple hierarchical directory structure, parses them into HTML, then populates or updates an indextank search index and a MongoDB. 

@@ -28,12 +28,6 @@ try{
 	console.log(err);
 }
 
-/*
-var searchify = conf[0].searchify,
-	githubconf = conf[0].github,
-    //repoName = githubconf.user + '/' + githubconf.repo,
-	rootPath = conf[0].rootPath;*/
-
 var github = require('octonode'),
     client = github.client(),
 	docsColl = mongoose.createConnection('localhost', conf[0].db);
@@ -70,7 +64,7 @@ app.configure(function(){
 
 app.post('/pusher', function(req, res){
     console.log('post received');
-	var currentConf ={};
+	var currentConf = {};
     try{
 		p = req.body.payload;
 		console.log(p);
@@ -82,14 +76,12 @@ app.post('/pusher', function(req, res){
 				currentConf = item;
 				callback(null);
 			}else{
-				callback(null);
+				callback('No configuration for pushed repository: ' + obj.repository.owner.name + '/' + obj.repository.name);
 			}
 		},
 		function(err){
 			if(err){
 				console.log(err);
-			}else if(currentConf === {}){
-				concole.log('No configuration for pushed repository: ' + obj.repository.owner.name + '/' + obj.repository.name);
 			}else{
 				var lastCommit = obj.commits[obj.commits.length - 1],
 				    updates = lastCommit.added.concat(lastCommit.modified),
@@ -143,13 +135,13 @@ app.get('/index/:conf', function(req, res){
 		var currentConf = conf[req.params.conf];
 		console.log('index request received');
 		res.send('index request received for ' + currentConf.github.repoName);
-		parsePath(currentConf.rootPath, client.repo(currentConf.github.repoName), currentConf, function(err){
+/*		parsePath(currentConf.rootPath, client.repo(currentConf.github.repoName), currentConf, function(err){
 			if(err){
 				console.log(err);
 			} else {
 				console.log('done');
 			}
-		});
+		});*/
 
 		indexMenu(currentConf, function(err){
 			if(err){
@@ -287,7 +279,6 @@ function parseContent(path, ghrepo, repoName, callback){
 }
 
 function indexDoc(fileObj, currentConf, callback){
-	
 	// Ignore redirect files for searchify
 	if(fileObj.redirect){
 		console.log('skipped indexing redirect to searchify: ' + fileObj.path);
@@ -385,60 +376,67 @@ function deindexDoc(path, currentConf, callback){
 function indexMenu(currentConf, callback){
 	var menuArr =[];
     console.log('menu index request received');
-	buildMenu(rootPath, client.repo("joebadmo/afdocs-test"), menuArr, function(err){
+	buildMenu(currentConf.rootPath, currentConf, client.repo(currentConf.github.repoName), menuArr, function(err){
 		if(err){
 			if(callback){
-				callback(err);
+				callback('error building menu: ' + err);
 			}else{
 				console.log(err);
 			}
 		}else{
-			sortMenu(menuArr, function(sortedMenu){
-				saveMenu(sortedMenu, function(){
-					console.log('menu saved');
+			sortMenu(menuArr, function(err, sortedMenu){
+				if(err){
 					if(callback){
-						callback(null);
+						callback(err);
+					}else{
+						console.log('error sorting menu: ' + err);
 					}
-				});
+				}else{
+					saveMenu(sortedMenu, function(err){
+						if(err){
+							if(callback){
+								callback(err);
+							}else{
+								console.log('error saving menu: ' + err);
+							}
+						}else{
+							console.log('menu saved');
+							if(callback){
+								callback(null);
+							}
+						}
+					});
+				}
 			});
 		}
 	});
 }
 
-function buildMenu(path, ghrepo, menuArray, callback){
+function buildMenu(path, currentConf, ghrepo, menuArray, callback){
 	ghrepo.contents(path, function(err, data){
 		if(err){
-			callback(err);
+			callback('ghrepo error: ' + err);
 		}else{
-			async.forEach(data, parseMenuArray, function(err){
-				if(err){
-					callback(err);
-				}else{
-					callback(null);
-				}
-			});
+			async.forEach(data, parseMenuArray, callback);
 		}
 	});
 
 	function parseMenuArray(item, forCallback){
 
-		if(item.path.substring(0, 1)!== '.'){
+		if(item.path.substring(0, 1) !== '.'){
 			if(item.type === 'file'){
-				if(item.path.substring(0, 1)=== '/'){
+				if(item.path.substring(0, 1) === '/'){
 					item.path = item.path.substring(1);
 				}
-				parseContent(item.path, ghrepo, function(err, parsedObj){
+				parseContent(item.path, ghrepo, currentConf.github.repoName, function(err, parsedObj){
 					if(err){
-						forCallback(err);
+						forCallback('parseContent error for path ' + item.path + ': ' + err);
 					}else{
-						//handle redirect files
 						if(parsedObj.redirect){
-							var newMenuObj ={'title': parsedObj.title, 'path': parsedObj.redirect, 'weight': parsedObj.weight};
-
+							var newMenuObj = {'title': parsedObj.title, 'path': parsedObj.redirect, 'weight': parsedObj.weight};
 						}else{
-
-							var newMenuObj ={'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight};
-							if(newMenuObj.path.substring(newMenuObj.path.length - 8, newMenuObj.path.length)=== 'overview'){
+							var newMenuObj = {'title': parsedObj.title, 'path': parsedObj.path, 'weight': parsedObj.weight};
+							if(newMenuObj.path.substring(newMenuObj.path.length - 8, newMenuObj.path.length) === 'overview'){
 								newMenuObj.weight = 0;
 							}
 						}
@@ -446,18 +444,14 @@ function buildMenu(path, ghrepo, menuArray, callback){
 						forCallback(null);
 					}
 				});
-
 			}else if(item.type === 'dir'){
-
-				parseContent(item.path + '/overview.markdown', ghrepo, function(err, parsedObj){
-
+				parseContent(item.path + '/overview.markdown', ghrepo, currentConf.github.repoName, function(err, parsedObj){
 					if(err){
 						forCallback(err);
 					}else{
-
 						var newMenuObj ={'title': parsedObj.title, 'path': parsedObj.path.replace('/overview',''), 'weight': parsedObj.weight, 'children':[]};
 						menuArray.push(newMenuObj);
-						buildMenu(parsedObj.path.replace('/overview',''), ghrepo, newMenuObj.children, forCallback);
+						buildMenu(parsedObj.path.replace('/overview',''), currentConf, ghrepo, newMenuObj.children, forCallback);
 					}
 				});
 			}else{
@@ -488,8 +482,7 @@ function sortMenu(menuArr2, callback){
 		if(err){
 			callback(err);
 		}else{
-			menuArr2 = results;
-			callback(menuArr2);
+			callback(null, results);
 		}
 	});
 }
@@ -497,10 +490,8 @@ function sortMenu(menuArr2, callback){
 function saveMenu(menuArr, callback){
 
 	Menu.findOne({'title': 'menu'}, function(err, menu){
-
 		if(err){
 			callback(err);
-
 		}else if(menu){
 			console.log('updating menu');
 			menu.menuArray = menuArr ;
@@ -516,7 +507,7 @@ function saveMenu(menuArr, callback){
 			if(err){
 				callback(err);
 			}else{
-				console.log(' new menu saved to mongodb');
+				console.log('menu saved to mongodb');
 				callback(null);
 			}
 		});

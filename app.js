@@ -133,13 +133,13 @@ app.get('/index/:conf', function(req, res){
 			}
 		});
 
-		indexMenu(currentConf, function(err){
+/*		indexMenu(currentConf, function(err){
 			if(err){
 				console.log(err);
 			}else{
 				res.send('menu index complete');
 			}
-		});
+		});*/
 	}
 });
 
@@ -164,6 +164,12 @@ app.get('/getmenu', function(req, res){
 });
 
 function parsePath(path, ghrepo, currentConf, callback){
+	var searchifyClient = restify.createJsonClient({
+			url: currentConf.searchify.url
+		});
+	var docsColl = mongoose.createConnection('localhost', currentConf.db);
+	docsColl.on('error', console.error.bind(console, 'connection error:'));
+	var Doc = docsColl.model('document', docSchema);
 	ghrepo.contents(path, function(err, data){
 		if(err){
 			callback(err);
@@ -179,11 +185,23 @@ function parsePath(path, ghrepo, currentConf, callback){
 								if(err){
 									forCallback(err);
 								}else{
-									indexDoc(parsedObj, currentConf, forCallback);
+									if(currentConf.searchify.url !== null){
+										indexToSearch(parsedObj, currentConf.searchify.index, searchifyClient, function(err, fileObj){
+											addToDB(fileObj, Doc, forCallback);
+										});
+									}else{
+										addToDB(parsedObj, Doc, forCallback);
+									}
+
 								}
 							});
 						}else if(item.type === 'dir'){
-							parsePath(item.path, ghrepo, currentConf, forCallback);
+							if(item.path === currentConf.imagePath){
+								console.log('skipping images dir: ' + item.path);
+								forCallback(null);
+							}else{
+								parsePath(item.path, ghrepo, currentConf, forCallback);
+							}
 						}else{
 							console.log('skipped non-markdown file: ' + item.path);
 							forCallback(null);
@@ -268,11 +286,58 @@ function parseContent(path, ghrepo, repoName, callback){
 	});
 }
 
-function indexDoc(fileObj, currentConf, callback){
+function indexToSearch(fileObj, searchifyIndex, searchifyClient, callback){
+	searchifyClient.put('/v1/indexes/' + searchifyIndex + '/docs', {docid: fileObj.docid, fields: {text: fileObj.content, title: fileObj.title, path: fileObj.path}}, function(err, req, res, obj){
+		if(err){
+			callback(err);
+		}else{
+			console.log("Indexed to searchify: " + fileObj.path);
+			callback(null, fileObj);
+		}
+	});
+}
 
-	var docsColl = mongoose.createConnection('localhost', currentConf.db);
-	docsColl.on('error', console.error.bind(console, 'connection error:'));
-	var Doc = docsColl.model('document', docSchema);
+function addToDB(fileObj, mongoDoc, callback){
+	mongoDoc.findOne({'path': fileObj.path}, function(err, doc){
+		if(err){
+			callback(err);
+		}else{
+			if(doc){
+				doc.title = fileObj.title;
+				doc.body = fileObj.content;
+				doc.path = fileObj.path;
+				doc.category = fileObj.category;
+				doc.save(function(err){
+					if(err){
+						callback(err);
+					}else{
+						console.log(fileObj.path + ' added to mongodb');
+						callback(null);
+					}
+				});
+			}else{
+				var newDoc = new mongoDoc({
+					title: fileObj.title,
+					body: fileObj.content,
+					path: fileObj.path,
+					category: fileObj.category
+				});
+
+				newDoc.save(function(err){
+					if(err){
+						callback(err);
+					}else{
+						console.log(fileObj.title + ' updated mongodb');
+						callback(null);
+					}
+				});
+			}
+		}
+	});
+}
+
+function indexDoc(fileObj, currentConf, mongoDoc, callback){
+
 	// Ignore redirect files for searchify
 	if(fileObj.redirect){
 		console.log('skipped indexing redirect to searchify: ' + fileObj.path);
@@ -289,10 +354,11 @@ function indexDoc(fileObj, currentConf, callback){
 				}else{
 					console.log("Indexed to searchify: " + fileObj.path);
 					// Index to MongoDB
-					Doc.findOne({'path': fileObj.path}, function(err, doc){
+					mongoDoc.findOne({'path': fileObj.path}, function(err, doc){
 						if(err){
 							callback(err);
 						}else{
+							console.log('indexing ' + fileObj.path);
 							if(doc){
 								doc.title = fileObj.title;
 								doc.body = fileObj.content;
@@ -302,11 +368,12 @@ function indexDoc(fileObj, currentConf, callback){
 									if(err){
 										callback(err);
 									}else{
+										console.log(fileObj.title + 'indexed to mongodb');
 										callback(null);
 									}
 								});
 							}else{
-								var newDoc = new Doc({
+								var newDoc = new mongoDoc({
 									title: fileObj.title,
 									body: fileObj.content,
 									path: fileObj.path,
@@ -317,6 +384,7 @@ function indexDoc(fileObj, currentConf, callback){
 									if(err){
 										callback(err);
 									}else{
+										console.log(fileObj.title + 'indexed to mongodb');
 										callback(null);
 									}
 								});
@@ -326,7 +394,8 @@ function indexDoc(fileObj, currentConf, callback){
 				}
 			});
 		}else{
-			callback('searchify API URL not set, unable to index: ' + fileObj.path);
+			console.log('searchify API URL not set, unable to index: ' + fileObj.path);
+			callback(null);
 		}
 	}
 }

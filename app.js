@@ -29,15 +29,7 @@ try{
 }
 
 var github = require('octonode'),
-    client = github.client(),
-	docsColl = mongoose.createConnection('localhost', conf[0].db);
-
-app.use(express.logger());
-
-docsColl.on('error', console.error.bind(console, 'connection error:'));
-docsColl.once('open', function(){
-	console.log('connected to mongodb');
-});
+    client = github.client();
 
 var docSchema = new mongoose.Schema({
 	title: String,
@@ -52,9 +44,7 @@ var menuSchema = new mongoose.Schema({
 	title: String
 });
 
-var Doc = docsColl.model('document', docSchema);
-var Menu = docsColl.model('menu', menuSchema);
-
+app.use(express.logger());
 app.configure(function(){
     app.use(express.methodOverride());
     app.use(express.bodyParser());
@@ -135,13 +125,13 @@ app.get('/index/:conf', function(req, res){
 		var currentConf = conf[req.params.conf];
 		console.log('index request received');
 		res.send('index request received for ' + currentConf.github.repoName);
-/*		parsePath(currentConf.rootPath, client.repo(currentConf.github.repoName), currentConf, function(err){
+		parsePath(currentConf.rootPath, client.repo(currentConf.github.repoName), currentConf, function(err){
 			if(err){
 				console.log(err);
 			} else {
-				console.log('done');
+				console.log('content index complete');
 			}
-		});*/
+		});
 
 		indexMenu(currentConf, function(err){
 			if(err){
@@ -279,6 +269,10 @@ function parseContent(path, ghrepo, repoName, callback){
 }
 
 function indexDoc(fileObj, currentConf, callback){
+
+	var docsColl = mongoose.createConnection('localhost', currentConf.db);
+	docsColl.on('error', console.error.bind(console, 'connection error:'));
+	var Doc = docsColl.model('document', docSchema);
 	// Ignore redirect files for searchify
 	if(fileObj.redirect){
 		console.log('skipped indexing redirect to searchify: ' + fileObj.path);
@@ -339,6 +333,10 @@ function indexDoc(fileObj, currentConf, callback){
 
 function deindexDoc(path, currentConf, callback){
 
+	var docsColl = mongoose.createConnection('localhost', currentConf.db);
+	docsColl.on('error', console.error.bind(console, 'connection error:'));
+	var Doc = docsColl.model('document', docSchema);
+
 	if(currentConf.searchify.url !== null){
 		var searchifyClient = restify.createJsonClient({
 				url: currentConf.searchify.url
@@ -392,7 +390,7 @@ function indexMenu(currentConf, callback){
 						console.log('error sorting menu: ' + err);
 					}
 				}else{
-					saveMenu(sortedMenu, function(err){
+					saveMenu(sortedMenu, currentConf, function(err){
 						if(err){
 							if(callback){
 								callback(err);
@@ -487,7 +485,11 @@ function sortMenu(menuArr2, callback){
 	});
 }
 
-function saveMenu(menuArr, callback){
+function saveMenu(menuArr, currentConf, callback){
+
+	var docsColl = mongoose.createConnection('localhost', currentConf.db);
+	docsColl.on('error', console.error.bind(console, 'connection error:'));
+	var Menu = docsColl.model('menu', menuSchema);
 
 	Menu.findOne({'title': 'menu'}, function(err, menu){
 		if(err){

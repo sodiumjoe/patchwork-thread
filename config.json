@@ -23,6 +23,6 @@
 			"repo": "pfdocs-test"
 		},
 		"rootPath": "/",
-		"db": "test"
+		"db": "pf-test"
 	}]
 }

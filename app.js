@@ -156,6 +156,8 @@ app.get('/index/:conf', function(req, res){
 		parsePath(currentConf.rootPath, client.repo(currentConf.github.repoName), currentConf, function(err){
 			if(err){
 				console.log(err);
+			} else {
+				console.log('done');
 			}
 		});
 		/*
@@ -189,7 +191,7 @@ function parsePath(path, ghrepo, currentConf, callback){
 			async.forEach(data, 
 				function(item, forCallback){
 					if(item.path.substring(0, 1)!== '.'){
-						if(item.type === 'file'){
+						if(item.type === 'file' && (item.path.substring(item.path.length - 9) === '.markdown' || item.path.substring(item.path.length - 3) === '.md')){
 							if(item.path.substring(0, 1)=== '/'){
 								item.path = item.path.substring(1);
 							}
@@ -198,16 +200,28 @@ function parsePath(path, ghrepo, currentConf, callback){
 									forCallback(err);
 								}else{
 									indexDoc(parsedObj, currentConf, function(err){
-										forCallback(err);
+										if(err){
+											forCallback(err);
+										}else{
+											forCallback(null);
+										}
 									});
 								}
 							});
 						}else if(item.type === 'dir'){
 							parsePath(item.path, ghrepo, currentConf, function(err){
-								forCallback(null);
+								if(err){
+									forCallback(err);
+								}else{
+									forCallback(null);
+								}
 							});
+						}else{
+							console.log('skipped non-markdown file: ' + item.path);
+							forCallback(null);
 						}
 					}else{
+						console.log('skipped dotfile: ' + item.path);
 						forCallback(null);
 					}
 				}, 
@@ -246,18 +260,31 @@ function parseContent(path, ghrepo, repoName, callback){
 							if(err3){
 								callback(err3 + path);
 							}else{
-								var parsedObj ={
-									title: tempObj.attributes.title,
-									path: path.replace(".markdown","").replace("index",""),
-									content: tempObj.body,
-									docid: path.replace(".markdown","").replace(/\//g,'-'),
-									weight: tempObj.attributes.weight || 0
-								};
-							
-								if(tempObj.attributes.redirect){
-									parsedObj.redirect = tempObj.attributes.redirect;
-								}
-								callback(null, parsedObj);
+								var pathArr = path.split('/');
+								pathArr.pop();
+								var cat = '';
+								async.forEachSeries(pathArr, function(item, forCallback){
+									cat += (item + '.');
+									forCallback(null);
+								},function(err){
+									if(err){
+										callback(err);
+									}else{
+										var parsedObj ={
+											title: tempObj.attributes.title,
+											path: path.replace(".markdown","").replace("index",""),
+											content: tempObj.body,
+											docid: path.replace(".markdown","").replace(/\//g,'-'),
+											weight: tempObj.attributes.weight || 0,
+									        category: cat.substring(0, cat.length-1)
+										};
+									
+										if(tempObj.attributes.redirect){
+											parsedObj.redirect = tempObj.attributes.redirect;
+										}
+										callback(null, parsedObj);
+									}
+								});
 							}
 						});
 					}
@@ -270,7 +297,7 @@ function parseContent(path, ghrepo, repoName, callback){
 }
 
 function indexDoc(fileObj, currentConf, callback){
-
+	
 	// Ignore redirect files for searchify
 	if(fileObj.redirect){
 		console.log('skipped indexing redirect to searchify: ' + fileObj.path);
@@ -278,28 +305,20 @@ function indexDoc(fileObj, currentConf, callback){
 		if(currentConf.searchify.url !== null){
 			// Index to Searchify
 			var searchifyClient = restify.createJsonClient({
-					url: current.Conf.searchify.url
-				});
-			searchifyClient.put('/v1/indexes/' + currentConf.searchify.index + '/docs',{docid: fileObj.docid, fields:{text: fileObj.content, title: fileObj.title, path: fileObj.path}}, function(err, req, res, obj){
+				url: currentConf.searchify.url
+			});
+			searchifyClient.put('/v1/indexes/' + currentConf.searchify.index + '/docs', {docid: fileObj.docid, fields: {text: fileObj.content, title: fileObj.title, path: fileObj.path}}, function(err, req, res, obj){
 				if(err){
 					callback(err);
 				}else{
 					console.log("Indexed to searchify: " + fileObj.path);
 				}
 			});
-
-			var pathArr = fileObj.path.split('/');
-			var cat = '';
-			for(i = 0; i < pathArr.length - 1; i++){
-				cat += pathArr[i];
-				if(i < pathArr.length - 2){
-					cat += '.';
-				}
-			}
 		}else{
 			console.log('searchify API URL not set, unable to index: ' + fileObj.path);
 		}
 	}
+
 	// Index to MongoDB
 	Doc.findOne({'path': fileObj.path}, function(err, doc){
 		if(err){
@@ -309,12 +328,12 @@ function indexDoc(fileObj, currentConf, callback){
 				doc.title = fileObj.title;
 				doc.body = fileObj.content;
 				doc.path = fileObj.path;
-				doc.category = cat;
+				doc.category = fileObj.category;
 				doc.save(function(err){
 					if(err){
 						callback(err);
 					}else{
-						console.log(fileObj.path + ' doc updated to mongodb' + 'category: ' + cat);
+						console.log(fileObj.path + ' doc updated to mongodb: ' + 'category: ' + fileObj.category);
 						callback(null);
 					}
 				});
@@ -323,14 +342,14 @@ function indexDoc(fileObj, currentConf, callback){
 					title: fileObj.title,
 					body: fileObj.content,
 					path: fileObj.path,
-					category: cat
+					category: fileObj.category
 				});
 
 				newDoc.save(function(err){
 					if(err){
 						callback(err);
 					}else{
-						console.log(fileObj.path + ' new doc saved to mongodb' + 'category: ' + cat);
+						console.log(fileObj.path + ' new doc saved to mongodb: ' + 'category: ' + fileObj.category);
 						callback(null);
 					}
 				});

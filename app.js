@@ -73,7 +73,13 @@ app.post('/pusher', function(req, res){
 			if(err){
 				console.log(err);
 			}else{
-				var lastCommit = obj.commits[obj.commits.length - 1],
+				var searchifyClient = restify.createJsonClient({
+						url: currentConf.searchify.url
+					}),
+				    docsColl = mongoose.createConnection('localhost', currentConf.db);
+				docsColl.on('error', console.error.bind(console, 'connection error:'));
+				var Doc = docsColl.model('document', docSchema),
+				    lastCommit = obj.commits[obj.commits.length - 1],
 				    updates = lastCommit.added.concat(lastCommit.modified),
 				    removed = lastCommit.removed;
 				console.log("Last commit: \n" + lastCommit.id);
@@ -83,7 +89,13 @@ app.post('/pusher', function(req, res){
 						if(err){
 							callback(err);
 						}else{
-							indexDoc(parsedObj, currentConf, callback);
+							if(currentConf.searchify.url !== null){
+								indexToSearch(parsedObj, currentConf.searchify.index, searchifyClient, function(err){
+									addToDB(parsedObj, Doc, callback);
+								});
+							}else{
+								addToDB(parsedObj, Doc, callback);
+							}
 						}
 					});
 				}, 
@@ -97,7 +109,17 @@ app.post('/pusher', function(req, res){
 
 				console.log("Removing: \n " + removed.toString());
 				async.forEach(removed, function(item, callback){
-					deindexDoc(item, currentConf, callback);
+					if(currentConf.searchify.url !== null){
+						deindexFromSearch(item, currentConf.searchify.index, searchifyClient, function(err){
+							if(err){
+								callback(err);
+							}else{
+								removeFromDB(item, Doc, callback);
+							}
+						});
+					}else{
+						removeFromDB(item, Doc, callback);
+					}
 				}, 
 				function(err){
 					if(err){
@@ -133,34 +155,14 @@ app.get('/index/:conf', function(req, res){
 			}
 		});
 
-/*		indexMenu(currentConf, function(err){
+		indexMenu(currentConf, function(err){
 			if(err){
 				console.log(err);
 			}else{
 				res.send('menu index complete');
 			}
-		});*/
+		});
 	}
-});
-
-app.get('/menu', function(req, res){
-	indexMenu(function(err){
-		if(err){
-			console.log(err);
-		}else{
-			res.send('menu index complete');
-		}
-	});
-});
-
-app.get('/getmenu', function(req, res){
-	Menu.find({'title': 'menu'}, function(err, menu){
-		if(err){
-			console.log(err);
-		}else{
-			res.send(menu[0].menuArray);
-		}
-	});
 });
 
 function parsePath(path, ghrepo, currentConf, callback){
@@ -186,8 +188,8 @@ function parsePath(path, ghrepo, currentConf, callback){
 									forCallback(err);
 								}else{
 									if(currentConf.searchify.url !== null){
-										indexToSearch(parsedObj, currentConf.searchify.index, searchifyClient, function(err, fileObj){
-											addToDB(fileObj, Doc, forCallback);
+										indexToSearch(parsedObj, currentConf.searchify.index, searchifyClient, function(err){
+											addToDB(parsedObj, Doc, forCallback);
 										});
 									}else{
 										addToDB(parsedObj, Doc, forCallback);
@@ -197,7 +199,7 @@ function parsePath(path, ghrepo, currentConf, callback){
 							});
 						}else if(item.type === 'dir'){
 							if(item.path === currentConf.imagePath){
-								console.log('skipping images dir: ' + item.path);
+								console.log('skipped images dir: ' + item.path);
 								forCallback(null);
 							}else{
 								parsePath(item.path, ghrepo, currentConf, forCallback);
@@ -292,10 +294,23 @@ function indexToSearch(fileObj, searchifyIndex, searchifyClient, callback){
 			callback(err);
 		}else{
 			console.log("Indexed to searchify: " + fileObj.path);
-			callback(null, fileObj);
+			callback(null);
 		}
 	});
 }
+
+function deindexFromSearch(path, searchifyIndex, searchifyClient, callback){
+	var delPath = '/v1/indexes/' + searchifyIndex + '/docs/?' + 'docid=' + path;
+	searchifyClient.del(delPath, function(err, req, res){
+		if(err){
+			callback(err);
+		}else{
+			console.log('deindexed from searchify: ' + path);
+			callback(null);
+		}
+	});
+}
+
 
 function addToDB(fileObj, mongoDoc, callback){
 	mongoDoc.findOne({'path': fileObj.path}, function(err, doc){
@@ -336,44 +351,15 @@ function addToDB(fileObj, mongoDoc, callback){
 	});
 }
 
-function deindexDoc(path, currentConf, callback){
-
-	var docsColl = mongoose.createConnection('localhost', currentConf.db);
-	docsColl.on('error', console.error.bind(console, 'connection error:'));
-	var Doc = docsColl.model('document', docSchema);
-
-	if(currentConf.searchify.url !== null){
-		var searchifyClient = restify.createJsonClient({
-				url: currentConf.searchify.url
-			}),
-			delPath = '/v1/indexes/' + currentConf.searchify.index + '/docs/?' + 'docid=' + path;
-
-		searchifyClient.del(delPath, function(err, req, res){
-			if(err){
-				callback(err);
-			}else{
-				console.log('deindexed from searchify: ' + fileObj.path);
-				Doc.find({'path': path.replace('.markdown','')}).remove(function(err){
-					if(err){
-						callback(err);
-					}else{
-						console.log(path + ' removed from DB');
-						callback(null);
-					}
-				});
-			}
-		});
-	}else{
-		console.log('searchify API URL not set, unable to index: ' + fileObj.path);
-		Doc.find({'path': path.replace('.markdown','')}).remove(function(err){
-			if(err){
-				callback(err);
-			}else{
-				console.log(path + ' removed from DB');
-				callback(null);
-			}
-		});
-	}
+function removeFromDB(path, mongoDoc, callback){
+	mongoDoc.find({'path': path.replace('.markdown','')}).remove(function(err){
+		if(err){
+			callback(err);
+		}else{
+			console.log(path + ' removed from DB');
+			callback(null);
+		}
+	});
 }
 
 function indexMenu(currentConf, callback){
@@ -461,7 +447,7 @@ function buildMenu(path, currentConf, ghrepo, menuArray, callback){
 				forCallback('Error: unknown file type for "' + item.path + '"');
 			}
 		}else{
-			console.log('parse menu skipping dotfile: ' + item.path);
+			console.log('parsing menu skipped dotfile: ' + item.path);
 			forCallback(null);
 		}
 	}

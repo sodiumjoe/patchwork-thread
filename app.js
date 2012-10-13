@@ -150,16 +150,24 @@ app.get('/index/:conf', function(req, res){
 				console.log('done');
 			}
 		});
-		/*
-		indexMenu(function(){
-			res.send('menu index complete');
-		});*/
+
+		indexMenu(currentConf, function(err){
+			if(err){
+				console.log(err);
+			}else{
+				res.send('menu index complete');
+			}
+		});
 	}
 });
 
 app.get('/menu', function(req, res){
-	indexMenu(function(){
-		res.send('menu index complete');
+	indexMenu(function(err){
+		if(err){
+			console.log(err);
+		}else{
+			res.send('menu index complete');
+		}
 	});
 });
 
@@ -374,18 +382,26 @@ function deindexDoc(path, currentConf, callback){
 	}
 }
 
-function indexMenu(callback){
+function indexMenu(currentConf, callback){
 	var menuArr =[];
     console.log('menu index request received');
-	buildMenu(rootPath, client.repo("joebadmo/afdocs-test"), menuArr, function(){
-		sortMenu(menuArr, function(sortedMenu){
-			saveMenu(sortedMenu, function(){
-				console.log('menu saved');
-				if(callback){
-					callback();
-				}
+	buildMenu(rootPath, client.repo("joebadmo/afdocs-test"), menuArr, function(err){
+		if(err){
+			if(callback){
+				callback(err);
+			}else{
+				console.log(err);
+			}
+		}else{
+			sortMenu(menuArr, function(sortedMenu){
+				saveMenu(sortedMenu, function(){
+					console.log('menu saved');
+					if(callback){
+						callback(null);
+					}
+				});
 			});
-		});
+		}
 	});
 }
 
@@ -397,6 +413,8 @@ function buildMenu(path, ghrepo, menuArray, callback){
 			async.forEach(data, parseMenuArray, function(err){
 				if(err){
 					callback(err);
+				}else{
+					callback(null);
 				}
 			});
 		}
@@ -404,15 +422,11 @@ function buildMenu(path, ghrepo, menuArray, callback){
 
 	function parseMenuArray(item, forCallback){
 
-		// ignore dotfiles and contents
 		if(item.path.substring(0, 1)!== '.'){
-
 			if(item.type === 'file'){
-
 				if(item.path.substring(0, 1)=== '/'){
 					item.path = item.path.substring(1);
 				}
-
 				parseContent(item.path, ghrepo, function(err, parsedObj){
 					if(err){
 						forCallback(err);
@@ -450,6 +464,7 @@ function buildMenu(path, ghrepo, menuArray, callback){
 				forCallback('Error: unknown file type for "' + item.path + '"');
 			}
 		}else{
+			console.log('parse menu skipping dotfile: ' + item.path);
 			forCallback(null);
 		}
 	}

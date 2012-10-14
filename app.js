@@ -8,31 +8,49 @@ var fs = require('fs'),
     app = express.createServer(),
     yamlFront = require('./lib/yamlFront'),
     mongoose = require('mongoose'),
-	mongoConnectionURI = 'localhost',
-    confData = fs.readFileSync('./config.json');
-
-if(process.env.VCAP_SERVICES){
-    var env = JSON.parse(process.env.VCAP_SERVICES);
-    mongoConnectionURI = 'mongodb://' + env['mongodb-1.8'][0]['credentials']['username'] + ':' + env['mongodb-1.8'][0]['credentials']['password'] + '@' + env['mongodb-1.8'][0]['credentials']['host'] + ':' + env['mongodb-1.8'][0]['credentials']['port'] + '/' + env['mongodb-1.8'][0]['credentials']['database'];
-}
+    confData = fs.readFileSync('./config.json'),
+	env = {};
 
 try{
 	var conf = JSON.parse(confData).config;
-	async.forEach(conf, function(item, callback){
-		item.github.repoName = item.github.user + '/' + item.github.repo;
-		if(item.searchify.url === null){
-			item.searchify.url = process.env[item.searchify.privateEnvVar]|| null;
-		}
-	},
-	function(err){
-		if(err){
-			console.log(err);
-		}
-	});
 }catch(err){
 	console.log('Error in config.json file:');
 	console.log(err);
 }
+
+if(process.env.VCAP_SERVICES){
+    env = JSON.parse(process.env.VCAP_SERVICES);
+    mongoConnectionURI = 'mongodb://' + env['mongodb-1.8'][0]['credentials']['username'] + ':' + env['mongodb-1.8'][0]['credentials']['password'] + '@' + env['mongodb-1.8'][0]['credentials']['host'] + ':' + env['mongodb-1.8'][0]['credentials']['port'] + '/' + env['mongodb-1.8'][0]['credentials']['database'];
+}
+
+async.forEach(conf, function(item, callback){
+	item.github.repoName = item.github.user + '/' + item.github.repo;
+	if(item.searchify.url === null){
+		item.searchify.url = process.env[item.searchify.privateEnvVar] || null;
+	}
+	item.mongoConnectionURI = 'localhost';
+	if(env['mongodb-1.8']){
+		async.forEach(env['mongodb-1.8'], function(item2, callback2){
+			if(item2.name === item.db){
+				item.mongoConnectionURI = 'mongodb://' + item2.credentials.username + ':' + item2.credentials.password + '@' + item2.credentials.host + ':' + item2.credentials.port + '/' + item2.credentials.database;
+			}
+			callback2(null);
+		},
+		function(err){
+			if(err){
+				callback(err);
+			}else{
+				callback(null);
+			}
+		});
+	}
+},
+function(err){
+	if(err){
+		console.log(err);
+	}
+	console.log(conf);
+});
 
 var github = require('octonode'),
     client = github.client();
@@ -82,7 +100,7 @@ app.post('/pusher', function(req, res){
 				var searchifyClient = restify.createJsonClient({
 						url: currentConf.searchify.url
 					}),
-				    docsColl = mongoose.createConnection('localhost', currentConf.db);
+				    docsColl = mongoose.createConnection(currentConf.mongoConnectionURI, currentConf.db);
 				docsColl.on('error', console.error.bind(console, 'connection error:'));
 				var Doc = docsColl.model('document', docSchema),
 				    lastCommit = obj.commits[obj.commits.length - 1],
@@ -175,7 +193,7 @@ function parsePath(path, ghrepo, currentConf, callback){
 	var searchifyClient = restify.createJsonClient({
 			url: currentConf.searchify.url
 		});
-	var docsColl = mongoose.createConnection('localhost', currentConf.db);
+	var docsColl = mongoose.createConnection(currentConf.mongoConnectionURI, currentConf.db);
 	docsColl.on('error', console.error.bind(console, 'connection error:'));
 	var Doc = docsColl.model('document', docSchema);
 	ghrepo.contents(path, function(err, data){
@@ -359,7 +377,7 @@ function removeFromDB(path, mongoDoc, callback){
 
 function indexMenu(currentConf, callback){
 	var menuArr =[];
-	var docsColl = mongoose.createConnection('localhost', currentConf.db);
+	var docsColl = mongoose.createConnection(currentConf.mongoConnectionURI, currentConf.db);
 	docsColl.on('error', console.error.bind(console, 'connection error:'));
 	var Menu = docsColl.model('menu', menuSchema);
     console.log('menu index request received');

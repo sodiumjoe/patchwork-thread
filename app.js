@@ -8,7 +8,13 @@ var fs = require('fs'),
     app = express.createServer(),
     yamlFront = require('./lib/yamlFront'),
     mongoose = require('mongoose'),
+	mongoConnectionURI = 'localhost',
     confData = fs.readFileSync('./config.json');
+
+if(process.env.VCAP_SERVICES){
+    var env = JSON.parse(process.env.VCAP_SERVICES);
+    mongoConnectionURI = 'mongodb://' + env['mongodb-1.8'][0]['credentials']['username'] + ':' + env['mongodb-1.8'][0]['credentials']['password'] + '@' + env['mongodb-1.8'][0]['credentials']['host'] + ':' + env['mongodb-1.8'][0]['credentials']['port'] + '/' + env['mongodb-1.8'][0]['credentials']['database'];
+}
 
 try{
 	var conf = JSON.parse(confData).config;

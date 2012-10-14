@@ -455,8 +455,8 @@ function buildMenu(path, currentConf, ghrepo, menuArray, callback){
 	}
 }
 
-function sortMenu(menuArr2, callback){
-	async.sortBy(menuArr2, function(item, sortCallback){
+function sortMenu(menuArr, callback){
+	async.sortBy(menuArr, function(item, sortCallback){
 		if(item.children){
 			if(item.children.length > 0){
 				sortMenu(item.children, function(err, results){
@@ -469,13 +469,7 @@ function sortMenu(menuArr2, callback){
 		}else{
 			sortCallback(null, item.weight);
 		}
-	}, function(err, results){
-		if(err){
-			callback(err);
-		}else{
-			callback(null, results);
-		}
-	});
+	}, callback);
 }
 
 function saveMenu(menuArr, currentConf, mongoMenu, callback){

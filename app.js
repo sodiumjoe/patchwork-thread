@@ -267,14 +267,24 @@ function parseContent(path, ghrepo, repoName, callback){
 									        category: cat.substring(0, cat.length-1)
 										};
 
-										if(parsedObj.category === ''){
-											parsedObj.category='root';
-										}
-									
-										if(tempObj.attributes.redirect){
-											parsedObj.redirect = tempObj.attributes.redirect;
-										}
-										callback(null, parsedObj);
+										async.forEach(tempObj.attributes, function(item, forCallback2){
+											parsedObj[item]=item;
+											forCallback2(null);
+										}, 
+										function(err){
+											if(err){
+												callback(err);
+											}else{
+												if(parsedObj.category === ''){
+													parsedObj.category='root';
+												}
+											
+												if(tempObj.attributes.redirect){
+													parsedObj.redirect = tempObj.attributes.redirect;
+												}
+												callback(null, parsedObj);
+											}
+										});
 									}
 								});
 							}
@@ -310,7 +320,6 @@ function deindexFromSearch(path, searchifyIndex, searchifyClient, callback){
 		}
 	});
 }
-
 
 function addToDB(fileObj, mongoDoc, callback){
 	mongoDoc.findOne({'path': fileObj.path}, function(err, doc){
@@ -364,6 +373,9 @@ function removeFromDB(path, mongoDoc, callback){
 
 function indexMenu(currentConf, callback){
 	var menuArr =[];
+	var docsColl = mongoose.createConnection('localhost', currentConf.db);
+	docsColl.on('error', console.error.bind(console, 'connection error:'));
+	var Menu = docsColl.model('menu', menuSchema);
     console.log('menu index request received');
 	buildMenu(currentConf.rootPath, currentConf, client.repo(currentConf.github.repoName), menuArr, function(err){
 		if(err){
@@ -376,15 +388,15 @@ function indexMenu(currentConf, callback){
 			sortMenu(menuArr, function(err, sortedMenu){
 				if(err){
 					if(callback){
-						callback(err);
+						callback('error sorting menu: ' + err);
 					}else{
 						console.log('error sorting menu: ' + err);
 					}
 				}else{
-					saveMenu(sortedMenu, currentConf, function(err){
+					saveMenu(sortedMenu, currentConf, Menu, function(err){
 						if(err){
 							if(callback){
-								callback(err);
+								callback('error saving menu: ' + err);
 							}else{
 								console.log('error saving menu: ' + err);
 							}
@@ -411,9 +423,8 @@ function buildMenu(path, currentConf, ghrepo, menuArray, callback){
 	});
 
 	function parseMenuArray(item, forCallback){
-
 		if(item.path.substring(0, 1) !== '.'){
-			if(item.type === 'file'){
+			if(item.type === 'file' && (item.path.substring(item.path.length - 9) === '.markdown' || item.path.substring(item.path.length - 3) === '.md')){
 				if(item.path.substring(0, 1) === '/'){
 					item.path = item.path.substring(1);
 				}
@@ -434,17 +445,21 @@ function buildMenu(path, currentConf, ghrepo, menuArray, callback){
 					}
 				});
 			}else if(item.type === 'dir'){
-				parseContent(item.path + '/overview.markdown', ghrepo, currentConf.github.repoName, function(err, parsedObj){
-					if(err){
-						forCallback(err);
-					}else{
-						var newMenuObj ={'title': parsedObj.title, 'path': parsedObj.path.replace('/overview',''), 'weight': parsedObj.weight, 'children':[]};
-						menuArray.push(newMenuObj);
-						buildMenu(parsedObj.path.replace('/overview',''), currentConf, ghrepo, newMenuObj.children, forCallback);
-					}
-				});
+				if(item.path !== currentConf.imagePath){
+					parseContent(item.path + '/overview.markdown', ghrepo, currentConf.github.repoName, function(err, parsedObj){
+						if(err){
+							forCallback('error menu parsing dir: ' + item.path + err);
+						}else{
+							var newMenuObj ={'title': parsedObj.title, 'path': parsedObj.path.replace('/overview',''), 'weight': parsedObj.weight, 'children':[]};
+							menuArray.push(newMenuObj);
+							buildMenu(parsedObj.path.replace('/overview',''), currentConf, ghrepo, newMenuObj.children, forCallback);
+						}
+					});
+				}else{
+					console.log('parsing menu skipped image path: ' + item.path);
+				}
 			}else{
-				forCallback('Error: unknown file type for "' + item.path + '"');
+				console.log('parsing menu skipped non-markdown file: ' + item.path );
 			}
 		}else{
 			console.log('parsing menu skipped dotfile: ' + item.path);
@@ -476,13 +491,8 @@ function sortMenu(menuArr2, callback){
 	});
 }
 
-function saveMenu(menuArr, currentConf, callback){
-
-	var docsColl = mongoose.createConnection('localhost', currentConf.db);
-	docsColl.on('error', console.error.bind(console, 'connection error:'));
-	var Menu = docsColl.model('menu', menuSchema);
-
-	Menu.findOne({'title': 'menu'}, function(err, menu){
+function saveMenu(menuArr, currentConf, mongoMenu, callback){
+	mongoMenu.findOne({'title': 'menu'}, function(err, menu){
 		if(err){
 			callback(err);
 		}else if(menu){
@@ -490,7 +500,7 @@ function saveMenu(menuArr, currentConf, callback){
 			menu.menuArray = menuArr ;
 		}else{
 			console.log('saving new menu');
-			var menu = new Menu({
+			var menu = new mongoMenu({
 				title: "menu",
 				menuArray: menuArr
 			});

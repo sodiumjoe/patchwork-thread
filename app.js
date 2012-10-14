@@ -46,7 +46,7 @@ var docSchema = new mongoose.Schema({
 });
 
 var menuSchema = new mongoose.Schema({
-	menuArray:{},
+	menuArray: {},
 	title: String
 });
 
@@ -435,9 +435,9 @@ function buildMenu(path, currentConf, ghrepo, menuArray, callback){
 						if(err){
 							forCallback('error menu parsing dir: ' + item.path + err);
 						}else{
-							var newMenuObj ={'title': parsedObj.title, 'path': parsedObj.path.replace('/overview',''), 'weight': parsedObj.weight, 'children':[]};
+							var newMenuObj = {'title': parsedObj.title, 'path': parsedObj.path.replace('/overview',''), 'weight': parsedObj.weight, 'children':[]};
 							menuArray.push(newMenuObj);
-							buildMenu(parsedObj.path.replace('/overview',''), currentConf, ghrepo, newMenuObj.children, forCallback);
+							buildMenu(item.path, currentConf, ghrepo, newMenuObj.children, forCallback);
 						}
 					});
 				}else{
@@ -459,7 +459,7 @@ function sortMenu(menuArr2, callback){
 	async.sortBy(menuArr2, function(item, sortCallback){
 		if(item.children){
 			if(item.children.length > 0){
-				sortMenu(item.children, function(results){
+				sortMenu(item.children, function(err, results){
 					item.children = results;
 					sortCallback(null, item.weight);
 				});

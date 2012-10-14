@@ -2,7 +2,7 @@
 	"config": [{
 		"searchify": {
 			"url": null,
-			"privateEnvVar": "SEARCHIFY_PRIVATE_URL", 
+			"privateEnvVar": "SEARCHIFY_PRIVATE_API_URL", 
 			"index": "afdocs"
 		},
 		"github": {
@@ -10,12 +10,12 @@
 			"repo": "afdocs-test"
 		},
 		"rootPath": "/",
-		"db": "test"
+		"db": "afdocs"
 	},
 	{
 		"searchify": {
 			"url": null,
-			"privateEnvVar": "SEARCHIFY_PRIVATE_URL", 
+			"privateEnvVar": "SEARCHIFY_PRIVATE_API_URL", 
 			"index": "pfdocs"
 		},
 		"github": {
@@ -23,7 +23,7 @@
 			"repo": "pfdocs-test"
 		},
 		"rootPath": "/",
-		"db": "pf-test",
+		"db": "pfdocs",
 		"imagePath": "img"
 	}]
 }

@@ -244,7 +244,7 @@ function parseContent(path, ghrepo, repoName, callback){
 					if(err2){
 						callback(err2);
 					}else{
-						yamlFront.parse(rawContent.body, function(err3, tempObj){
+						yamlFront.parse(rawContent.body, function(err3, parsedObj){
 							if(err3){
 								callback(err3 + path);
 							}else{
@@ -258,33 +258,13 @@ function parseContent(path, ghrepo, repoName, callback){
 									if(err){
 										callback(err);
 									}else{
-										var parsedObj ={
-											title: tempObj.attributes.title,
-											path: path.replace(".markdown","").replace("index",""),
-											content: tempObj.body,
-											docid: path.replace(".markdown","").replace(/\//g,'-'),
-											weight: tempObj.attributes.weight || 0,
-									        category: cat.substring(0, cat.length-1)
-										};
-
-										async.forEach(tempObj.attributes, function(item, forCallback2){
-											parsedObj[item]=item;
-											forCallback2(null);
-										}, 
-										function(err){
-											if(err){
-												callback(err);
-											}else{
-												if(parsedObj.category === ''){
-													parsedObj.category='root';
-												}
-											
-												if(tempObj.attributes.redirect){
-													parsedObj.redirect = tempObj.attributes.redirect;
-												}
-												callback(null, parsedObj);
-											}
-										});
+										parsedObj.docid = path.replace(".markdown","").replace(/\//g,'-');
+									    parsedObj.path = path.replace(".markdown","").replace("index","");
+										parsedObj.category = cat.substring(0, cat.length-1);
+										if(!parsedObj.weight){
+											parsedObj.weight = 0;
+										}
+										callback(null, parsedObj);
 									}
 								});
 							}

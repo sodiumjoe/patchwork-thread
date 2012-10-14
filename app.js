@@ -159,7 +159,7 @@ app.get('/index/:conf', function(req, res){
 			if(err){
 				console.log(err);
 			}else{
-				res.send('menu index complete');
+				console.log('menu index complete');
 			}
 		});
 	}
@@ -401,7 +401,6 @@ function indexMenu(currentConf, callback){
 								console.log('error saving menu: ' + err);
 							}
 						}else{
-							console.log('menu saved');
 							if(callback){
 								callback(null);
 							}
@@ -457,9 +456,11 @@ function buildMenu(path, currentConf, ghrepo, menuArray, callback){
 					});
 				}else{
 					console.log('parsing menu skipped image path: ' + item.path);
+					forCallback(null);
 				}
 			}else{
 				console.log('parsing menu skipped non-markdown file: ' + item.path );
+				forCallback(null);
 			}
 		}else{
 			console.log('parsing menu skipped dotfile: ' + item.path);

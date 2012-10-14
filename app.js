@@ -53,17 +53,15 @@ function(err){
 });
 
 var github = require('octonode'),
-    client = github.client();
-
-var docSchema = new mongoose.Schema({
+    client = github.client(),
+    docSchema = new mongoose.Schema({
 	title: String,
 	body: String,
 	category: String,
 	path: String,
 	tags:[]
-});
-
-var menuSchema = new mongoose.Schema({
+}),
+    menuSchema = new mongoose.Schema({
 	menuArray: {},
 	title: String
 });
@@ -88,14 +86,14 @@ app.post('/pusher', function(req, res){
 		async.forEach(conf, function(item, callback){
 			if(item.github.user === obj.repository.owner.name && item.github.repo === obj.repository.name){
 				currentConf = item;
-				callback(null);
-			}else{
-				callback('No configuration for pushed repository: ' + obj.repository.owner.name + '/' + obj.repository.name);
 			}
+			callback(null);
 		},
 		function(err){
 			if(err){
 				console.log(err);
+			}else if(currentConf === {}){
+				console.log('No configuration for pushed repository: ' + obj.repository.owner.name + '/' + obj.repository.name);
 			}else{
 				var searchifyClient = restify.createJsonClient({
 						url: currentConf.searchify.url
@@ -130,7 +128,6 @@ app.post('/pusher', function(req, res){
 						console.log("Updates complete");
 					}
 				});
-
 				console.log("Removing: \n " + removed.toString());
 				async.forEach(removed, function(item, callback){
 					if(currentConf.searchify.url !== null){
@@ -152,15 +149,16 @@ app.post('/pusher', function(req, res){
 						console.log('Removals complete');
 					}
 				});
-
-				indexMenu();
+				indexMenu(currentConf, function(err){
+					if(err){
+						console.log(err);
+					}
+				});
 			}
 		});
-
 	}catch(err){
 		console.log("Error:", err);
 	}
-
 	res.send('Done with post');	
 });
 
@@ -513,7 +511,6 @@ function saveMenu(menuArr, currentConf, mongoMenu, callback){
 				callback(null);
 			}
 		});
-
 	});
 }
 

@@ -49,7 +49,6 @@ function(err){
 	if(err){
 		console.log(err);
 	}
-	console.log(conf);
 });
 
 var github = require('octonode'),
@@ -312,7 +311,7 @@ function indexToSearch(fileObj, searchifyIndex, searchifyClient, callback){
 }
 
 function deindexFromSearch(path, searchifyIndex, searchifyClient, callback){
-	var delPath = '/v1/indexes/' + searchifyIndex + '/docs/?' + 'docid=' + path;
+	var delPath = '/v1/indexes/' + searchifyIndex + '/docs/?' + 'docid=' + path.replace('.markdown','');
 	searchifyClient.del(delPath, function(err, req, res){
 		if(err){
 			callback(err);

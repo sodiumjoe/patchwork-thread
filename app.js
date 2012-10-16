@@ -413,6 +413,7 @@ function indexMenu(currentConf, callback){
     });
 }
 
+
 function buildMenu(path, currentConf, ghrepo, menuArray, callback){
     ghrepo.contents(path, function(err, data){
         if(err){
@@ -512,5 +513,16 @@ function saveMenu(menuArr, currentConf, mongoMenu, callback){
         });
     });
 }
+
+exports.parsePath = parsePath;
+exports.parseContent = parseContent;
+exports.indexToSearch = indexToSearch;
+exports.deindexFromSearch = deindexFromSearch;
+exports.addToDb = addToDb;
+exports.removeFromDB = removeFromDB;
+exports.indexMenu = indexMenu;
+exports.buildMenu = buildMenu;
+exports.sortMenu = sortMenu;
+exports.saveMenu = saveMenu;
 
 app.listen(process.env.VCAP_APP_PORT || 3000);

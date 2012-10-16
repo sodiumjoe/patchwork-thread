@@ -1,5 +1,5 @@
 ---
-title: Test 3
+title: 'Test 3'
 weight: 2
 ---
 

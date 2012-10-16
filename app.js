@@ -106,7 +106,7 @@ app.post('/pusher', function(req, res){
                 console.log("Last commit: \n" + lastCommit.id);
                 console.log("Updating: \n " + updates.toString());
                 async.forEach(updates, function(item, callback){
-                    parseContent(item, client.repo(currentConf.github.repoName), currentConf.github.repoName, function(err, parsedObj){
+                    getContent(item, client.repo(currentConf.github.repoName), currentConf.github.repoName, function(err, parsedObj){
                         if(err){
                             callback(err);
                         }else{
@@ -204,7 +204,7 @@ function parsePath(path, ghrepo, currentConf, callback){
                             if(item.path.substring(0, 1) === '/'){
                                 item.path = item.path.substring(1);
                             }
-                            parseContent(item.path, ghrepo, currentConf.github.repoName, function(err, parsedObj){
+                            getContent(item.path, ghrepo, currentConf.github.repoName, function(err, parsedObj){
                                 if(err){
                                     forCallback(err);
                                 }else{
@@ -249,7 +249,7 @@ function parsePath(path, ghrepo, currentConf, callback){
     });
 }
 
-function parseContent(path, ghrepo, repoName, callback){
+function getContent(path, ghrepo, repoName, callback){
     ghrepo.contents(path, function(err, data){
         if(err){
             callback(err);
@@ -265,36 +265,40 @@ function parseContent(path, ghrepo, repoName, callback){
                     if(err2){
                         callback(err2);
                     }else{
-                        yamlFront.parse(rawContent.body, function(err3, parsedObj){
-                            if(err3){
-                                callback(err3 + path);
-                            }else{
-                                var pathArr = path.split('/');
-                                pathArr.pop();
-                                var cat = '';
-                                async.forEachSeries(pathArr, function(item, forCallback){
-                                    cat += (item + '.');
-                                    forCallback(null);
-                                },function(err){
-                                    if(err){
-                                        callback(err);
-                                    }else{
-                                        parsedObj.docid = path.replace(".markdown","").replace('.md','').replace(/\//g,'-');
-                                        parsedObj.path = path.replace(".markdown","").replace('.md','').replace("index","");
-                                        parsedObj.category = cat.substring(0, cat.length-1);
-                                        if(!parsedObj.weight){
-                                            parsedObj.weight = 0;
-                                        }
-                                        callback(null, parsedObj);
-                                    }
-                                });
-                            }
-                        });
+                        parseContent(path, rawContent.body, callback);
                     }
                 });    
             }else{
                 callback('Not a file: ' + path);
             }
+        }
+    });
+}
+
+function parseContent(path, rawContent, callback){
+    yamlFront.parse(rawContent, function(err, parsedObj){
+        if(err){
+            callback(err + path);
+        }else{
+            var pathArr = path.split('/');
+            pathArr.pop();
+            var cat = '';
+            async.forEachSeries(pathArr, function(item, forCallback){
+                cat += (item + '.');
+                forCallback(null);
+            },function(err){
+                if(err){
+                    callback(err);
+                }else{
+                    parsedObj.docid = path.replace(".markdown","").replace('.md','').replace(/\//g,'-');
+                    parsedObj.path = path.replace(".markdown","").replace('.md','').replace("index","");
+                    parsedObj.category = cat.substring(0, cat.length-1);
+                    if(!parsedObj.weight){
+                        parsedObj.weight = 0;
+                    }
+                    callback(null, parsedObj);
+                }
+            });
         }
     });
 }
@@ -429,9 +433,9 @@ function buildMenu(path, currentConf, ghrepo, menuArray, callback){
                 if(item.path.substring(0, 1) === '/'){
                     item.path = item.path.substring(1);
                 }
-                parseContent(item.path, ghrepo, currentConf.github.repoName, function(err, parsedObj){
+                getContent(item.path, ghrepo, currentConf.github.repoName, function(err, parsedObj){
                     if(err){
-                        forCallback('parseContent error for path ' + item.path + ': ' + err);
+                        forCallback('getContent error for path ' + item.path + ': ' + err);
                     }else{
                         if(parsedObj.redirect){
                             var newMenuObj = {'title': parsedObj.title, 'path': parsedObj.redirect, 'weight': parsedObj.weight};
@@ -447,7 +451,7 @@ function buildMenu(path, currentConf, ghrepo, menuArray, callback){
                 });
             }else if(item.type === 'dir'){
                 if(item.path !== currentConf.imagePath){
-                    parseContent(item.path + '/overview.markdown', ghrepo, currentConf.github.repoName, function(err, parsedObj){
+                    getContent(item.path + '/overview.markdown', ghrepo, currentConf.github.repoName, function(err, parsedObj){
                         if(err){
                             forCallback('error menu parsing dir: ' + item.path + err);
                         }else{
@@ -516,6 +520,7 @@ function saveMenu(menuArr, currentConf, mongoMenu, callback){
 
 exports.parsePath = parsePath;
 exports.parseContent = parseContent;
+exports.getContent = getContent;
 exports.indexToSearch = indexToSearch;
 exports.deindexFromSearch = deindexFromSearch;
 exports.addToDB = addToDB;

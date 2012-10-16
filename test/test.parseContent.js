@@ -4,7 +4,6 @@ var assert = require('assert'),
     client = github.client(),
     ghrepo = client.repo('joebadmo/indexer');
 
-
 suite('parseContent', function() {
     test('parseContent on test1.markdown should parse the content', function(done) {
         app.parseContent('test/test-data/test1.markdown', ghrepo, 'joebadmo/indexer', function(err, parsedObj) {
@@ -34,8 +33,8 @@ suite('parseContent', function() {
             done();
         });
     });
-    test('parseContent on test3.markdown should parse the content', function(done) {
-        app.parseContent('test/test-data/test3.markdown', ghrepo, 'joebadmo/indexer', function(err, parsedObj) {
+    test('parseContent on test3.md should parse the content', function(done) {
+        app.parseContent('test/test-data/test3.md', ghrepo, 'joebadmo/indexer', function(err, parsedObj) {
             if(err){
                 console.log(err);
             }

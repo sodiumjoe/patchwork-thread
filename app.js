@@ -279,8 +279,8 @@ function parseContent(path, ghrepo, repoName, callback){
                                     if(err){
                                         callback(err);
                                     }else{
-                                        parsedObj.docid = path.replace(".markdown","").replace(/\//g,'-');
-                                        parsedObj.path = path.replace(".markdown","").replace("index","");
+                                        parsedObj.docid = path.replace(".markdown","").replace('.md','').replace(/\//g,'-');
+                                        parsedObj.path = path.replace(".markdown","").replace('.md','').replace("index","");
                                         parsedObj.category = cat.substring(0, cat.length-1);
                                         if(!parsedObj.weight){
                                             parsedObj.weight = 0;
@@ -311,7 +311,7 @@ function indexToSearch(fileObj, searchifyIndex, searchifyClient, callback){
 }
 
 function deindexFromSearch(path, searchifyIndex, searchifyClient, callback){
-    var delPath = '/v1/indexes/' + searchifyIndex + '/docs/?' + 'docid=' + path.replace('.markdown','');
+    var delPath = '/v1/indexes/' + searchifyIndex + '/docs/?' + 'docid=' + path.replace('.markdown','').replace('.md','');
     searchifyClient.del(delPath, function(err, req, res){
         if(err){
             callback(err);
@@ -362,7 +362,7 @@ function addToDB(fileObj, mongoDoc, callback){
 }
 
 function removeFromDB(path, mongoDoc, callback){
-    mongoDoc.find({'path': path.replace('.markdown','')}).remove(function(err){
+    mongoDoc.find({'path': path.replace('.markdown','').replace('.md','')}).remove(function(err){
         if(err){
             callback(err);
         }else{

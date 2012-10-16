@@ -1,5 +1,5 @@
 ---
-title: Test 1
+title: Test
 weight: 0
 ---
 

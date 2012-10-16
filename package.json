@@ -2,12 +2,12 @@
  "name":"afdocs-seachify-indexer",
   "version":"0.0.1",
   "dependencies":{
+	  "async":"",
       "express":"",
-	  "octonode":"",
-	  "restify":"",
-	  "request":"",
-	  "yamlparser":"",
 	  "mongoose":"",
-	  "async":""
+	  "octonode":"",
+	  "request":"",
+	  "restify":"",
+	  "yamlparser":""
   }
 }

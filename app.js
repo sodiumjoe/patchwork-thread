@@ -417,7 +417,6 @@ function indexMenu(currentConf, callback){
     });
 }
 
-
 function buildMenu(path, currentConf, ghrepo, menuArray, callback){
     ghrepo.contents(path, function(err, data){
         if(err){

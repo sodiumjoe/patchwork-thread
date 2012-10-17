@@ -1,4 +1,4 @@
-var assert = require('assert'),
+/*var assert = require('assert'),
     fs = require ('fs'),
     app = require('./../app'),
     github = require('octonode'),
@@ -54,7 +54,6 @@ suite ('parseContent', function() {
             });
         });
     });
-});
 
 // Requires GitHub API calls
 /*suite('getContent', function() {
@@ -99,5 +98,5 @@ suite ('parseContent', function() {
             assert.equal(parsedObj.category, "test.test-data", 'Category does not match: ' + parsedObj.category);
             done();
         });
-    });
-});*/
+    });*/
+//});

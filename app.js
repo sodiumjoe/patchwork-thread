@@ -1,11 +1,18 @@
 var fs = require('fs'),
-    request = require('request'),
     Converter = require('./lib/pagedown/Markdown.Converter').Converter,
     converter = new Converter(),
     restify = require('restify'),
     async = require('async'),
     express = require('express'),
     app = express.createServer(),
+    mongoose = require('mongoose'),
+    github = require('octonode'),
+    client = github.client(),
+    content = require('./lib/content'),
+    menu = require('./lib/menu'),
+    database = require('./lib/database'),
+    search = require('./lib/search'),
+    models = require('./lib/models'),
     confData = fs.readFileSync('./config.json'),
     env = {};
 
@@ -49,20 +56,6 @@ function(err){
     }
 });
 
-var github = require('octonode'),
-    client = github.client(),
-    docSchema = new mongoose.Schema({
-        title: String,
-        body: String,
-        category: String,
-        path: String,
-        tags:[]
-    }),
-    menuSchema = new mongoose.Schema({
-    menuArray: {},
-    title: String
-});
-
 app.use(express.logger());
 app.configure(function(){
     app.use(express.methodOverride());
@@ -97,7 +90,7 @@ app.post('/pusher', function(req, res){
                     }),
                     docsColl = mongoose.createConnection(currentConf.mongoConnectionURI, currentConf.db);
                 docsColl.on('error', console.error.bind(console, 'connection error:'));
-                var Doc = docsColl.model('document', docSchema),
+                var Doc = docsColl.model('document', models.docSchema),
                     lastCommit = obj.commits[obj.commits.length - 1],
                     updates = lastCommit.added.concat(lastCommit.modified),
                     removed = lastCommit.removed;

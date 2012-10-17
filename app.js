@@ -54,12 +54,12 @@ function(err){
 var github = require('octonode'),
     client = github.client(),
     docSchema = new mongoose.Schema({
-    title: String,
-    body: String,
-    category: String,
-    path: String,
-    tags:[]
-}),
+        title: String,
+        body: String,
+        category: String,
+        path: String,
+        tags:[]
+    }),
     menuSchema = new mongoose.Schema({
     menuArray: {},
     title: String
@@ -326,7 +326,7 @@ function deindexFromSearch(path, searchifyIndex, searchifyClient, callback){
     });
 }
 
-function addToDB(fileObj, mongoDoc, callback){
+function addToDB (fileObj, mongoDoc, callback) {
     mongoDoc.findOne({'path': fileObj.path}, function(err, doc){
         if(err){
             callback(err);
@@ -377,8 +377,8 @@ function removeFromDB(path, mongoDoc, callback){
 }
 
 function indexMenu(currentConf, callback){
-    var menuArr =[];
-    var docsColl = mongoose.createConnection(currentConf.mongoConnectionURI, currentConf.db);
+    var menuArr =[],
+        docsColl = mongoose.createConnection(currentConf.mongoConnectionURI, currentConf.db);
     docsColl.on('error', console.error.bind(console, 'connection error:'));
     var Menu = docsColl.model('menu', menuSchema);
     console.log('menu index request received');

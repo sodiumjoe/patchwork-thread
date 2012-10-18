@@ -101,38 +101,51 @@ app.post('/pusher', function(req, res){
 });
 
 app.get('/index/:user/:repo', function(req, res){
-
     config.getConf(req.params.user, req.params.repo, function(err, conf){
         if(err){
             console.log(err);
             res.send(err);
         }else{
-            console.log(conf);
+            content.parseDir(conf.rootPath, conf, function(err){
+                if(err){
+                    console.log(err);
+                }else{
+                    content.getContent(path, conf, function(err, rawContent){
+                        if(err){
+                            console.log(err);
+                        }else{
+                            content.parseContent(rawContent, function(null, parsedObj){
+                                if(err){
+                                    console.log(err);
+                                }else{
+                                    database.addToDB(parsedObj, conf, function(err){
+                                        if(err){
+                                            console.log(err);
+                                        }else{
+                                            search.indexToSearch(parsedObj, conf, function(err){
+                                                if(err){
+                                                    console.log(err);
+                                                }else{
+                                                    console.log(path + ' saved');
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            }, 
+            function(err){
+                if(err){
+                    console.log(err);
+                }else{
+                    console.log('done');
+                }
+            });
         }
     });
-/*
-    if(!req.params.conf || parseInt(req.params.conf) >= conf.length){
-        res.send('missing or invalid conf param ' + typeof(req.params.conf));
-    }else{
-        var currentConf = conf[req.params.conf];
-        console.log('index request received');
-        res.send('index request received for ' + currentConf.github.repoName);
-        content.parsePath(currentConf.rootPath, client.repo(currentConf.github.repoName), currentConf, function(err){
-            if(err){
-                console.log(err);
-            } else {
-                console.log('content index complete');
-            }
-        });
-
-        menu.indexMenu(currentConf, function(err){
-            if(err){
-                console.log(err);
-            }else{
-                console.log('menu index complete');
-            }
-        });
-    }*/
 });
 
 app.listen(process.env.VCAP_APP_PORT || 3000);

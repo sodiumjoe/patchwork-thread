@@ -1,60 +1,12 @@
-var fs = require('fs'),
-    Converter = require('./lib/pagedown/Markdown.Converter').Converter,
-    converter = new Converter(),
-    restify = require('restify'),
-    async = require('async'),
+var async = require('async'),
     express = require('express'),
     app = express.createServer(),
-    mongoose = require('mongoose'),
-    github = require('octonode'),
-    client = github.client(),
     content = require('./lib/content'),
     menu = require('./lib/menu'),
     database = require('./lib/database'),
     search = require('./lib/search'),
     models = require('./lib/models'),
-    confData = fs.readFileSync('./config.json'),
-    env = {};
-
-try{
-    var conf = JSON.parse(confData).config;
-}catch(err){
-    console.log('Error in config.json file:');
-    console.log(err);
-}
-
-if(process.env.VCAP_SERVICES){
-    env = JSON.parse(process.env.VCAP_SERVICES);
-    mongoConnectionURI = 'mongodb://' + env['mongodb-1.8'][0]['credentials']['username'] + ':' + env['mongodb-1.8'][0]['credentials']['password'] + '@' + env['mongodb-1.8'][0]['credentials']['host'] + ':' + env['mongodb-1.8'][0]['credentials']['port'] + '/' + env['mongodb-1.8'][0]['credentials']['database'];
-}
-
-async.forEach(conf, function(item, callback){
-    item.github.repoName = item.github.user + '/' + item.github.repo;
-    if(item.searchify.url === null){
-        item.searchify.url = process.env[item.searchify.privateEnvVar] || null;
-    }
-    item.mongoConnectionURI = 'localhost';
-    if(env['mongodb-1.8']){
-        async.forEach(env['mongodb-1.8'], function(item2, callback2){
-            if(item2.name === item.db){
-                item.mongoConnectionURI = 'mongodb://' + item2.credentials.username + ':' + item2.credentials.password + '@' + item2.credentials.host + ':' + item2.credentials.port + '/' + item2.credentials.database;
-            }
-            callback2(null);
-        },
-        function(err){
-            if(err){
-                callback(err);
-            }else{
-                callback(null);
-            }
-        });
-    }
-},
-function(err){
-    if(err){
-        console.log(err);
-    }
-});
+    config = require('./lib/config');
 
 app.use(express.logger());
 app.configure(function(){
@@ -66,48 +18,47 @@ app.configure(function(){
 
 app.post('/pusher', function(req, res){
     console.log('post received');
-    var currentConf = {};
     try{
         p = req.body.payload;
         console.log(p);
 
-        var obj = JSON.parse(p);
+        var obj = JSON.parse(p),
+            lastCommit = obj.commits[obj.commits.length - 1],
+            updates = lastCommit.added.concat(lastCommit.modified),
+            removed = lastCommit.removed;
 
-        async.forEach(conf, function(item, callback){
-            if(item.github.user === obj.repository.owner.name && item.github.repo === obj.repository.name){
-                currentConf = item;
-            }
-            callback(null);
-        },
-        function(err){
+        config.getConf(obj.repository.owner.name, obj.repository.name, function(err, conf){
             if(err){
                 console.log(err);
-            }else if(currentConf === {}){
-                console.log('No configuration for pushed repository: ' + obj.repository.owner.name + '/' + obj.repository.name);
             }else{
-                var searchifyClient = restify.createJsonClient({
-                        url: currentConf.searchify.url
-                    }),
-                    docsColl = mongoose.createConnection(currentConf.mongoConnectionURI, currentConf.db);
-                docsColl.on('error', console.error.bind(console, 'connection error:'));
-                var Doc = docsColl.model('document', models.docSchema),
-                    lastCommit = obj.commits[obj.commits.length - 1],
-                    updates = lastCommit.added.concat(lastCommit.modified),
-                    removed = lastCommit.removed;
+
                 console.log("Last commit: \n" + lastCommit.id);
                 console.log("Updating: \n " + updates.toString());
+
                 async.forEach(updates, function(item, callback){
-                    content.getContent(item, client.repo(currentConf.github.repoName), currentConf.github.repoName, function(err, parsedObj){
+                    content.getContent(item, conf, function(err, rawContent){
                         if(err){
                             callback(err);
                         }else{
-                            if(currentConf.searchify.url !== null){
-                                indexToSearch(parsedObj, currentConf.searchify.index, searchifyClient, function(err){
-                                    addToDB(parsedObj, Doc, callback);
-                                });
-                            }else{
-                                database.addToDB(parsedObj, Doc, callback);
-                            }
+                            content.parseContent(rawContent, function(err, parsedObj){
+                                if(err){
+                                    callback(err);
+                                }else{
+                                    database.addToDB(parsedObj, conf, function(err){
+                                        if(err){
+                                            callback(err);
+                                        }else{
+                                            search.indexToSearch(parsedObj, conf, function(err){
+                                                if(err){
+                                                    callback(err);
+                                                }else{
+                                                    callback(null);
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
                         }
                     });
                 }, 
@@ -118,19 +69,16 @@ app.post('/pusher', function(req, res){
                         console.log("Updates complete");
                     }
                 });
+
                 console.log("Removing: \n " + removed.toString());
-                async.forEach(removed, function(item, callback){
-                    if(currentConf.searchify.url !== null){
-                        search.deindexFromSearch(item, currentConf.searchify.index, searchifyClient, function(err){
-                            if(err){
-                                callback(err);
-                            }else{
-                                database.removeFromDB(item, Doc, callback);
-                            }
-                        });
-                    }else{
-                        database.removeFromDB(item, Doc, callback);
-                    }
+                async.forEach(removed, function(path, callback){
+                    search.deindexFromSearch(path, conf, function(err){
+                        if(err){
+                            callback(err);
+                        }else{
+                            database.removeFromDB(path, conf, callback);
+                        }
+                    });
                 }, 
                 function(err){
                     if(err){
@@ -139,7 +87,7 @@ app.post('/pusher', function(req, res){
                         console.log('Removals complete');
                     }
                 });
-                menu.indexMenu(currentConf, function(err){
+                menu.indexMenu(conf, function(err){
                     if(err){
                         console.log(err);
                     }
@@ -152,7 +100,17 @@ app.post('/pusher', function(req, res){
     res.send('Done with post');    
 });
 
-app.get('/index/:conf', function(req, res){
+app.get('/index/:user/:repo', function(req, res){
+
+    config.getConf(req.params.user, req.params.repo, function(err, conf){
+        if(err){
+            console.log(err);
+            res.send(err);
+        }else{
+            console.log(conf);
+        }
+    });
+/*
     if(!req.params.conf || parseInt(req.params.conf) >= conf.length){
         res.send('missing or invalid conf param ' + typeof(req.params.conf));
     }else{
@@ -174,7 +132,7 @@ app.get('/index/:conf', function(req, res){
                 console.log('menu index complete');
             }
         });
-    }
+    }*/
 });
 
 app.listen(process.env.VCAP_APP_PORT || 3000);

@@ -106,36 +106,34 @@ app.get('/index/:user/:repo', function(req, res){
             console.log(err);
             res.send(err);
         }else{
-            content.parseDir(conf.rootPath, conf, function(err){
-                if(err){
-                    console.log(err);
-                }else{
-                    content.getContent(path, conf, function(err, rawContent){
-                        if(err){
-                            console.log(err);
-                        }else{
-                            content.parseContent(rawContent, function(null, parsedObj){
-                                if(err){
-                                    console.log(err);
-                                }else{
-                                    database.addToDB(parsedObj, conf, function(err){
-                                        if(err){
-                                            console.log(err);
-                                        }else{
-                                            search.indexToSearch(parsedObj, conf, function(err){
-                                                if(err){
-                                                    console.log(err);
-                                                }else{
-                                                    console.log(path + ' saved');
-                                                }
-                                            });
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
+            content.parseDir(conf.rootPath, conf, function(filePath, forCallback){
+                content.getContent(filePath, conf, function(err, rawContent){
+                    if(err){
+                        console.log(err);
+                    }else{
+                        content.parseContent(rawContent, function(err, parsedObj){
+                            if(err){
+                                console.log(err);
+                            }else{
+                                console.log(parsedObj.title);
+                                database.addToDB(parsedObj, conf, function(err){
+                                    if(err){
+                                        console.log(err);
+                                    }else{
+                                        search.indexToSearch(parsedObj, conf, function(err){
+                                            if(err){
+                                                console.log(err);
+                                            }else{
+                                                forCallback(null);
+                                                console.log(path + ' saved');
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
             }, 
             function(err){
                 if(err){

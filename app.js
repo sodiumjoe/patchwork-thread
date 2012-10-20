@@ -113,19 +113,24 @@ app.get('/index/:user/:repo', function(req, res){
                     }else{
                         content.parseContent(rawContent, function(err, parsedObj){
                             if(err){
-                                console.log(err);
+                                console.log(err + filePath);
                             }else{
-                                console.log(parsedObj.title);
-                                database.addToDB(parsedObj, conf, function(err){
+                                content.addExtraMetadata(parsedObj, filePath, function(err, finishedObj){
                                     if(err){
                                         console.log(err);
                                     }else{
-                                        search.indexToSearch(parsedObj, conf, function(err){
+                                        database.addToDB(finishedObj, conf, function(err){
                                             if(err){
                                                 console.log(err);
                                             }else{
-                                                forCallback(null);
-                                                console.log(path + ' saved');
+                                                search.indexToSearch(finishedObj, conf, function(err){
+                                                    if(err){
+                                                        console.log(err);
+                                                    }else{
+                                                        console.log(filePath + ' saved');
+                                                        forCallback(null);
+                                                    }
+                                                });
                                             }
                                         });
                                     }
@@ -138,8 +143,10 @@ app.get('/index/:user/:repo', function(req, res){
             function(err){
                 if(err){
                     console.log(err);
+                    res.send(err);
                 }else{
                     console.log('done');
+                    res.send('done');
                 }
             });
         }

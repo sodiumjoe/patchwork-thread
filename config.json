@@ -28,6 +28,6 @@
         },
         "rootPath": "/",
         "db": "pfdocs",
-        "imagePath": "img"
+        "ignoreDirs": ["img"]
     }]
 }

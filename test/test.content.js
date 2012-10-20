@@ -5,8 +5,7 @@ var path = '/',
             ghrepo: {
                 contents: function(path, callback){
                     var data = {
-                        type: 'file',
-
+                        type: 'file'
                     };
                     callback(null, data);
                 }
@@ -15,7 +14,7 @@ var path = '/',
     };
 
 exports['test getContent'] = function (test) {
-    request = function(options, callback){
+    global.request = function(options, callback){
         callback(null, 'raw content', 'body');
     };
 

@@ -1,4 +1,11 @@
-var content = require('../lib/content');
+var fakeRequest = function(options, callback){
+    var rawContent = {
+        body: 'raw content'
+    };
+    callback(null, rawContent, 'body');
+};
+
+var content = require('../lib/content')(fakeRequest);
 var path = '/',
     fileConf = {
         github: {
@@ -14,10 +21,6 @@ var path = '/',
     };
 
 exports['test getContent'] = function (test) {
-    global.request = function(options, callback){
-        callback(null, 'raw content', 'body');
-    };
-
     content.getContent(path, fileConf, function(err, rawContent){
         test.equal(rawContent, 'raw content');
         test.done();

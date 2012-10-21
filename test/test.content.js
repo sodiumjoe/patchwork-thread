@@ -54,6 +54,10 @@ exports['test parseDir'] = function (test) {
     var path = '',
         dataArray = [
             {
+                path: '.dotfile',
+                type: 'file'
+            },
+            {
                 path: 'test1.markdown',
                 type: 'file'
             },

@@ -26,3 +26,18 @@ exports['test getContent'] = function (test) {
         test.done();
     });
 };
+
+var goodYamlFront = '---\ntitle: "Test Title 1"\n---';
+var badYamlFront = 'things';
+
+exports['test parseContent'] = function (test) {
+    test.expect(2);
+    content.parseContent(goodYamlFront, function(err, parsedObj){
+        test.equal(parsedObj.title, 'Test Title 1');
+        content.parseContent(badYamlFront, function(err, parsedObj){
+            test.equal(typeof parsedObj, 'undefined');
+            test.done();
+        });
+    });
+
+};

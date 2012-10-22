@@ -107,32 +107,20 @@ app.get('/index/:user/:repo', function(req, res){
             res.send(err);
         }else{
             content.parseDir(conf.rootPath, conf, function(filePath, forCallback){
-                content.getContent(filePath, conf, function(err, rawContent){
+                content.getFinishedContentObj(filePath, conf, function(err, finishedObj){
                     if(err){
                         console.log(err);
                     }else{
-                        content.parseContent(rawContent, function(err, parsedObj){
+                        database.addToDB(finishedObj, conf, function(err){
                             if(err){
-                                console.log(err + filePath);
+                                console.log(err);
                             }else{
-                                content.addExtraMetadata(parsedObj, filePath, function(err, finishedObj){
+                                search.indexToSearch(finishedObj, conf, function(err){
                                     if(err){
                                         console.log(err);
                                     }else{
-                                        database.addToDB(finishedObj, conf, function(err){
-                                            if(err){
-                                                console.log(err);
-                                            }else{
-                                                search.indexToSearch(finishedObj, conf, function(err){
-                                                    if(err){
-                                                        console.log(err);
-                                                    }else{
-                                                        console.log(filePath + ' saved');
-                                                        forCallback(null);
-                                                    }
-                                                });
-                                            }
-                                        });
+                                        console.log(filePath + ' saved');
+                                        forCallback(null);
                                     }
                                 });
                             }

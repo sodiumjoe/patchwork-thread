@@ -24,7 +24,11 @@
         },
         "github": {
             "user": "joebadmo",
-            "repo": "pfdocs-test"
+            "repo": "pfdocs-test",
+            "credentials": {
+                "username": "joebadmo",
+                "passwordEnvVar": "GITHUB_PASSWORD"
+            }
         },
         "rootPath": "/",
         "db": "pfdocs",

@@ -109,15 +109,15 @@ app.get('/index/:user/:repo', function(req, res){
             content.parseDir(conf.rootPath, conf, function(filePath, forCallback){
                 content.getFinishedContentObj(filePath, conf, function(err, finishedObj){
                     if(err){
-                        console.log(err);
+                        forCallback('error getFinishedObj(): ' + err);
                     }else{
                         database.addToDB(finishedObj, conf, function(err){
                             if(err){
-                                console.log(err);
+                                forCallback('error addToDB: ' + err);
                             }else{
                                 search.indexToSearch(finishedObj, conf, function(err){
                                     if(err){
-                                        console.log(err);
+                                        forCallback('error indexToSearch: ' + err);
                                     }else{
                                         console.log(filePath + ' saved');
                                         forCallback(null);
@@ -134,7 +134,13 @@ app.get('/index/:user/:repo', function(req, res){
                     res.send(err);
                 }else{
                     console.log('done');
-                    res.send('done');
+                    menu.indexMenu(conf, function(err){
+                        if(err){
+                            console.log(err);
+                        }else{
+                            res.send('done');
+                        }
+                    });
                 }
             });
         }

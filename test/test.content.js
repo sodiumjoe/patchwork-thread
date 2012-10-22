@@ -6,49 +6,6 @@ var fakeRequest = function(options, callback){
 // Library to test
 var content = require('../lib/content')(fakeRequest);
 
-exports['test getContent'] = function (test) {
-    // test data
-    var path = '/',
-        conf = {
-            github: {
-                ghrepo: {
-                    contents: function(path, callback){
-                        var data = {
-                            type: 'file'
-                        };
-                        callback(null, data);
-                    }
-                }
-            }
-        };
-
-    test.expect(1);
-    content.getContent(path, conf, function(err, rawContent){
-        test.equal(rawContent, 'raw content');
-        test.done();
-    });
-};
-
-exports['test parseContent'] = function (test) {
-    // test data
-    var goodYamlFront = '---\ntitle: "Test Title 1"\nweight: 0\narbitrary: things\n---\n\nHello this is the content.',
-        badYamlFront = 'things';
-
-    test.expect(6);
-    content.parseContent(goodYamlFront, function(err, parsedObj){
-        test.equal(parsedObj.title, 'Test Title 1');
-        test.equal(parsedObj.weight, 0);
-        test.equal(parsedObj.arbitrary, 'things');
-        test.equal(parsedObj.content, 'Hello this is the content.');
-
-        content.parseContent(badYamlFront, function(err, parsedObj){
-            test.equal(typeof parsedObj, 'undefined');
-            test.equal(err, "Error parsing yaml front matter because of no match in file: ");
-            test.done();
-        });
-    });
-};
-
 exports['test parseDir'] = function (test) {
     // test data
     var path = '',
@@ -93,3 +50,62 @@ exports['test parseDir'] = function (test) {
         test.done();
     });
 };
+
+exports['test getContent'] = function (test) {
+    // test data
+    var path = '/',
+        conf = {
+            github: {
+                ghrepo: {
+                    contents: function(path, callback){
+                        var data = {
+                            type: 'file'
+                        };
+                        callback(null, data);
+                    }
+                }
+            }
+        };
+
+    test.expect(1);
+    content.getContent(path, conf, function(err, rawContent){
+        test.equal(rawContent, 'raw content');
+        test.done();
+    });
+};
+
+exports['test parseContent'] = function (test) {
+    // test data
+    var goodYamlFront = '---\ntitle: "Test Title 1"\nweight: 0\narbitrary: things\n---\n\nHello this is the content.',
+        badYamlFront = 'things';
+
+    test.expect(6);
+    content.parseContent(goodYamlFront, function(err, parsedObj){
+        test.equal(parsedObj.title, 'Test Title 1');
+        test.equal(parsedObj.weight, 0);
+        test.equal(parsedObj.arbitrary, 'things');
+        test.equal(parsedObj.content, 'Hello this is the content.');
+
+        content.parseContent(badYamlFront, function(err, parsedObj){
+            test.equal(typeof parsedObj, 'undefined');
+            test.equal(err, "Error parsing yaml front matter because of no match in file: ");
+            test.done();
+        });
+    });
+};
+
+exports['test addExtraMetadata'] = function (test) {
+    // test data
+    var path = 'test/path/to/object.markdown',
+        parsedObj = {};
+
+    test.expect(4);
+    content.addExtraMetadata(parsedObj, path, function(err, newObj){
+        test.equal(newObj.docid, 'test-path-to-object');
+        test.equal(newObj.path, 'test/path/to/object');
+        test.equal(newObj.category, 'test.path.to');
+        test.equal(newObj.weight, 0);
+        test.done();
+    });
+};
+

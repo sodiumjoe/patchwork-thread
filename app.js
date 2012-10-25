@@ -19,54 +19,11 @@ app.configure(function(){
 
 app.post('/pusher', function(req, res){
     console.log('post received');
-    payload.parse(req, function(err, deltaObj){
+    payload.push(req, function(err){
         if(err){
             console.log(err);
         }else{
-            config.getConf(deltaObj.user, deltaObj.repository, function(err, conf){
-                async.forEach(deltaObj.updated, 
-                    function(path, forCallback){
-                        content.getFinishedContentObj(path, conf, function(err, finishedObj){
-                            if(err){
-                                console.log(err);
-                            }else{
-                                database.addToDB(finishedObj, conf, function(err){
-                                    if(err){
-                                        console.log(err);
-                                    }else{
-                                        search.indexToSearch(finishedObj, conf, function(err){
-                                            if(err){
-                                                forCallback('error indexToSearch: ' + err);
-                                            }else{
-                                                console.log(path + ' saved');
-                                                forCallback(null);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    },
-                    function(err){
-                        if(err){
-                            console.log(err);
-                        }else{
-                            async.forEach(deltaObj.removed, 
-                                function(path, forCallback){
-                                    database.removeFromDB(path, conf, function(err){
-                                        if(err){
-                                            console.log(err);
-                                        }else{
-                                            search.deindexFromSearch(path, conf, forCallback);
-                                        }
-                                    });
-                                },
-                                function(err){
-                                    res.send('Done with post');    
-                                });
-                        }
-                    });
-            });
+            console.log('Post finished ' + Date());
         }
     });
 });

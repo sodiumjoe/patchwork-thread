@@ -38,7 +38,7 @@ app.post('/pusher', function(req, res){
                                             if(err){
                                                 forCallback('error indexToSearch: ' + err);
                                             }else{
-                                                console.log(filePath + ' saved');
+                                                console.log(path + ' saved');
                                                 forCallback(null);
                                             }
                                         });

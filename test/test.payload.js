@@ -10,10 +10,12 @@ var req = {
 
 exports['test payload.parse'] = function (test) {
     payload.parse(req, function(err, deltaObj){
+        test.expect(5);
         if(err){
             console.log(err);
         }else{
-            test.equals(deltaObj.repository, 'defunkt/github');
+            test.equals(deltaObj.repository, 'github');
+            test.equals(deltaObj.user, 'defunkt');
             test.equals(deltaObj.updated[0], 'filepath.rb');
             test.equals(deltaObj.updated[1], 'test.markdown');
             test.equals(deltaObj.removed[0], 'services/overview.markdown');

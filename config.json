@@ -14,7 +14,7 @@
             }
         },
         "rootPath": "/",
-        "db": "afdocs"
+        "db": "afdocs-rs"
     },
     {
         "searchify": {
@@ -31,7 +31,7 @@
             }
         },
         "rootPath": "/",
-        "db": "pfdocs",
+        "db": "pfdocs-rs",
         "ignoreDirs": ["img"]
     }]
 }

@@ -6,7 +6,8 @@ var async = require('async'),
     database = require('./lib/database'),
     search = require('./lib/search'),
     models = require('./lib/models'),
-    config = require('./lib/config');
+    config = require('./lib/config'),
+    payload = require('./lib/payload');
 
 app.use(express.logger());
 app.configure(function(){
@@ -18,86 +19,56 @@ app.configure(function(){
 
 app.post('/pusher', function(req, res){
     console.log('post received');
-    try{
-        p = req.body.payload;
-        console.log(p);
-
-        var obj = JSON.parse(p),
-            lastCommit = obj.commits[obj.commits.length - 1],
-            updates = lastCommit.added.concat(lastCommit.modified),
-            removed = lastCommit.removed;
-
-        config.getConf(obj.repository.owner.name, obj.repository.name, function(err, conf){
-            if(err){
-                console.log(err);
-            }else{
-
-                console.log("Last commit: \n" + lastCommit.id);
-                console.log("Updating: \n " + updates.toString());
-
-                async.forEach(updates, function(item, callback){
-                    content.getContent(item, conf, function(err, rawContent){
+    payload.parse(req, function(err, deltaObj){
+        if(err){
+            console.log(err);
+        }else{
+            config.getConf(deltaObj.user, deltaObj.repository, function(err, conf){
+                async.forEach(deltaObj.updated, 
+                    function(path, forCallback){
+                        content.getFinishedContentObj(path, conf, function(err, finishedObj){
+                            if(err){
+                                console.log(err);
+                            }else{
+                                database.addToDB(finishedObj, conf, function(err){
+                                    if(err){
+                                        console.log(err);
+                                    }else{
+                                        search.indexToSearch(finishedObj, conf, function(err){
+                                            if(err){
+                                                forCallback('error indexToSearch: ' + err);
+                                            }else{
+                                                console.log(filePath + ' saved');
+                                                forCallback(null);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    },
+                    function(err){
                         if(err){
-                            callback(err);
+                            console.log(err);
                         }else{
-                            content.parseContent(rawContent, function(err, parsedObj){
-                                if(err){
-                                    callback(err);
-                                }else{
-                                    database.addToDB(parsedObj, conf, function(err){
+                            async.forEach(deltaObj.removed, 
+                                function(path, forCallback){
+                                    removeFromDB(path, conf, function(err){
                                         if(err){
-                                            callback(err);
+                                            console.log(err);
                                         }else{
-                                            search.indexToSearch(parsedObj, conf, function(err){
-                                                if(err){
-                                                    callback(err);
-                                                }else{
-                                                    callback(null);
-                                                }
-                                            });
+                                            deindexFromSearch(path, conf, forCallback);
                                         }
                                     });
-                                }
-                            });
+                                },
+                                function(err){
+                                    res.send('Done with post');    
+                                });
                         }
                     });
-                }, 
-                function(err){
-                    if(err){
-                        console.log(err);
-                    }else{
-                        console.log("Updates complete");
-                    }
-                });
-
-                console.log("Removing: \n " + removed.toString());
-                async.forEach(removed, function(path, callback){
-                    search.deindexFromSearch(path, conf, function(err){
-                        if(err){
-                            callback(err);
-                        }else{
-                            database.removeFromDB(path, conf, callback);
-                        }
-                    });
-                }, 
-                function(err){
-                    if(err){
-                        console.log(err);
-                    }else{
-                        console.log('Removals complete');
-                    }
-                });
-                menu.indexMenu(conf, function(err){
-                    if(err){
-                        console.log(err);
-                    }
-                });
-            }
-        });
-    }catch(err){
-        console.log("Error:", err);
-    }
-    res.send('Done with post');    
+            });
+        }
+    });
 });
 
 app.get('/index/:user/:repo', function(req, res){

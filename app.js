@@ -53,11 +53,11 @@ app.post('/pusher', function(req, res){
                         }else{
                             async.forEach(deltaObj.removed, 
                                 function(path, forCallback){
-                                    removeFromDB(path, conf, function(err){
+                                    database.removeFromDB(path, conf, function(err){
                                         if(err){
                                             console.log(err);
                                         }else{
-                                            deindexFromSearch(path, conf, forCallback);
+                                            search.deindexFromSearch(path, conf, forCallback);
                                         }
                                     });
                                 },

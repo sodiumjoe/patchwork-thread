@@ -13,6 +13,7 @@ exports['test payload.parse'] = function (test) {
         test.expect(5);
         if(err){
             console.log(err);
+            test.done();
         }else{
             test.equals(deltaObj.repository, 'github');
             test.equals(deltaObj.user, 'defunkt');
@@ -22,4 +23,4 @@ exports['test payload.parse'] = function (test) {
             test.done();
         }
     });
-}
+};

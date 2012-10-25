@@ -107,4 +107,3 @@ exports['test addExtraMetadata'] = function (test) {
         test.done();
     });
 };
-

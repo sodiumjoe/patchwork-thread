@@ -9,7 +9,7 @@ var req = {
 };
 
 exports['test payload.parse'] = function (test) {
-    payload.parse(req, function(err, deltaObj){
+    payload.parsePayload(req, function(err, deltaObj){
         test.expect(5);
         if(err){
             console.log(err);
@@ -22,4 +22,4 @@ exports['test payload.parse'] = function (test) {
             test.done();
         }
     });
-}
+};

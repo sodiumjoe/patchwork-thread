@@ -25,10 +25,23 @@ var dir = [
         path: 'assetDir/asset4.png',
         type: 'file'
     }
-];
+],
+    conf = {
+        github: {
+            ghrepo: {
+                contents: function(path, callback){
+                    if(path === 'assetDir'){
+                        callback(null, dir2);
+                    }else{
+                        callback(null, dir);
+                    }
+                }
+            }
+        }
+    };
 
 exports['test asset.getAssetList'] = function (test) {
-    asset.getAssetList(dir, conf, function(err, assetArray){
+    asset.getAssetList('whatever', conf, function(err, assetArray){
         if(err){
             console.log(err);
         }else{

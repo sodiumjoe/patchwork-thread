@@ -14,7 +14,14 @@
             }
         },
         "rootPath": "/",
-        "db": "afdocs-rs"
+        "db": "afdocs-rs",
+        "assets": {
+            "path": "assets",
+            "S3": {
+                "access_key": "AKIAJXAY5WM4E5WSQGOA",
+                "secret": "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"
+            }
+        }
     },
     {
         "searchify": {
@@ -32,6 +39,6 @@
         },
         "rootPath": "/",
         "db": "pfdocs-rs",
-        "ignoreDirs": ["img"]
+        "assets": "assets"
     }]
 }

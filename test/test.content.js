@@ -25,16 +25,40 @@ exports['test parseDir'] = function (test) {
             {
                 path: 'test3.md',
                 type: 'file'
+            },
+            {
+                path: 'testDir',
+                type: 'dir'
+            },
+            {
+                path: 'assets',
+                type: 'dir'
+            },
+            {
+                path: 'dir_to_ignore',
+                type: 'dir'
+            }
+        ],
+        dataArray2 = [
+            {
+                path: 'testDir/test4.md',
+                type: 'file'
             }
         ],
         conf = {
             github: {
                 ghrepo: {
-                    contents: function(p, callback){
-                        callback(null, dataArray);
+                    contents: function(path, callback){
+                        if (path === 'testDir'){
+                            callback(null, dataArray2);
+                        }else{
+                            callback(null, dataArray);
+                        }
                     }
                 }
-            }
+            },
+            assets: 'assets',
+            ignoreDirs: ['dir_to_ignore']
         },
         testContainer = [],
         fileFunc = function(p, callback){
@@ -42,11 +66,13 @@ exports['test parseDir'] = function (test) {
             callback(null);
         };
 
-    test.expect(3);
+    test.expect(5);
     content.parseDir(path, conf, fileFunc, function(err, rawContent){
         test.equal(testContainer[0], 'test1.markdown');
         test.equal(testContainer[1], 'test2.markdown');
         test.equal(testContainer[2], 'test3.md');
+        test.equal(testContainer[3], 'testDir/test4.md');
+        test.equal(testContainer.length, 4);
         test.done();
     });
 };

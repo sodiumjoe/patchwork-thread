@@ -55,6 +55,3 @@ exports['test asset.getAssetList'] = function (test) {
         }
     });
 };
-
-/*exports['test asset.compareLists'] = function (test) {
-};*/

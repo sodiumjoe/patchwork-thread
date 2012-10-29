@@ -39,20 +39,30 @@ app.get('/index/:user/:repo', function(req, res){
                     if(err){
                         forCallback('error getFinishedObj(): ' + err);
                     }else{
-                        database.addToDB(finishedObj, conf, function(err){
-                            if(err){
-                                forCallback('error addToDB: ' + err);
-                            }else{
-                                search.indexToSearch(finishedObj, conf, function(err){
-                                    if(err){
-                                        forCallback('error indexToSearch: ' + err);
-                                    }else{
-                                        console.log(filePath + ' saved');
-                                        forCallback(null);
-                                    }
-                                });
-                            }
-                        });
+                        if(finishedObj.isAsset){
+                            asset.uploadToS3(finishedObj, conf, function(err){
+                                if(err){
+                                    console.log("Error uploading asset " + filePath + " to S3: " + err);
+                                }else{
+                                    forCallback(null);
+                                }
+                            });
+                        }else{
+                            database.addToDB(finishedObj, conf, function(err){
+                                if(err){
+                                    forCallback('error addToDB: ' + err);
+                                }else{
+                                    search.indexToSearch(finishedObj, conf, function(err){
+                                        if(err){
+                                            forCallback('error indexToSearch: ' + err);
+                                        }else{
+                                            console.log(filePath + ' saved');
+                                            forCallback(null);
+                                        }
+                                    });
+                                }
+                            });
+                        }
                     }
                 });
             }, 

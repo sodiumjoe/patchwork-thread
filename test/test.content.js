@@ -80,6 +80,7 @@ exports['test parseDir'] = function (test) {
 exports['test getContent'] = function (test) {
     // test data
     var path = '/',
+        path2 = 'assets/something.png',
         conf = {
             github: {
                 ghrepo: {
@@ -90,20 +91,40 @@ exports['test getContent'] = function (test) {
                         callback(null, data);
                     }
                 }
+            },
+            assets: {
+                path: 'assets'
             }
         };
 
-    test.expect(1);
+    test.expect(4);
     content.getContent(path, conf, function(err, rawContent){
-        test.equal(rawContent, 'raw content');
-        test.done();
+        if(err){
+            console.log(err);
+        }else{
+            test.equal(rawContent.body, 'raw content');
+            test.equal(rawContent.isAsset, false);
+            content.getContent(path2, conf, function(err2, rawContent2){
+                if(err2){
+                    console.log(err2);
+                }else{
+                    test.equal(rawContent2.body, 'raw content');
+                    test.equal(rawContent2.isAsset, true);
+                    test.done();
+                }
+            });
+        }
     });
 };
 
 exports['test parseContent'] = function (test) {
     // test data
-    var goodYamlFront = '---\ntitle: "Test Title 1"\nweight: 0\narbitrary: things\n---\n\nHello this is the content.\n\n### Hello\n\nMore content.\n\n### Anchor {#anchor}\n\nFinal.',
-        badYamlFront = 'things';
+    var goodYamlFront = {
+            body: '---\ntitle: "Test Title 1"\nweight: 0\narbitrary: things\n---\n\nHello this is the content.\n\n### Hello\n\nMore content.\n\n### Anchor {#anchor}\n\nFinal.'
+        },
+        badYamlFront = {
+            body: 'things'
+        };
 
     test.expect(6);
     content.parseContent(goodYamlFront, function(err, parsedObj){

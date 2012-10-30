@@ -85,4 +85,12 @@ app.get('/index/:user/:repo', function(req, res){
     });
 });
 
+var asset = require('./lib/asset');
+
+config.getConf('joebadmo', 'pfdocs-test', function(err, conf){
+    asset.downloadFile('img/cron-1.jpg', conf, function(err){
+        console.log('done');
+    });
+});
+
 app.listen(process.env.VCAP_APP_PORT || 3000);

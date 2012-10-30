@@ -41,11 +41,11 @@
         "rootPath": "/",
         "db": "pfdocs-rs",
         "assets": {
-            "path": "assets",
+            "path": "img",
             "S3": {
-                "access_key": "things",
-                "secret": "other things",
-                "bucket": "pfdocs"
+                "access_key": "S3_ACCESS_KEY",
+                "secret": "S3_SECRET",
+                "bucket": "afdocs"
             }
         }
     }]

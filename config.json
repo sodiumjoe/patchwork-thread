@@ -18,8 +18,9 @@
         "assets": {
             "path": "assets",
             "S3": {
-                "access_key": "AKIAJXAY5WM4E5WSQGOA",
-                "secret": "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"
+                "access_key": "S3_ACCESS_KEY",
+                "secret": "S3_SECRET",
+                "bucket": "afdocs"
             }
         }
     },
@@ -39,6 +40,13 @@
         },
         "rootPath": "/",
         "db": "pfdocs-rs",
-        "assets": "assets"
+        "assets": {
+            "path": "assets",
+            "S3": {
+                "access_key": "things",
+                "secret": "other things",
+                "bucket": "pfdocs"
+            }
+        }
     }]
 }

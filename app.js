@@ -40,11 +40,17 @@ app.get('/index/:user/:repo', function(req, res){
                         forCallback('error getFinishedObj(): ' + err);
                     }else{
                         if(finishedObj.isAsset){
-                            asset.uploadToS3(finishedObj, conf, function(err){
+                            asset.downloadFile(finishedObj.path, conf, function(err){
                                 if(err){
-                                    console.log("Error uploading asset " + filePath + " to S3: " + err);
+                                    forCallback(err);
                                 }else{
-                                    forCallback(null);
+                                    asset.uploadToS3(finishedObj.path, conf, function(err){
+                                        if(err){
+                                            forCallback(err);
+                                        }else{
+                                            forCallback(null);
+                                        }
+                                    });
                                 }
                             });
                         }else{

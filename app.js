@@ -93,9 +93,27 @@ app.get('/index/:user/:repo', function(req, res){
 
 var asset = require('./lib/asset');
 
-config.getConf('joebadmo', 'pfdocs-test', function(err, conf){
-    asset.downloadFile('img/cron-1.jpg', conf, function(err){
-        console.log('done');
+config.getConf('joebadmo', 'afdocs-test', function(err, conf){
+    asset.getAssetList('assets', conf, function(err, assetArr){
+        if(err){
+            console.log(err);
+        }else{
+            async.forEach(assetArr, function(item, forCallback){
+                asset.downloadFile(item.path, conf, function(err){
+                    if(err){
+                        forCallback(err);
+                    }else{
+                        asset.uploadToS3(item.path, conf, forCallback);
+                    }
+                });
+            }, function(err){
+                if(err){
+                    console.log(err);
+                }else{
+                    console.log('done');
+                }
+            });
+        }
     });
 });
 

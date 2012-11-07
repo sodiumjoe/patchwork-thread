@@ -29,6 +29,34 @@ app.post('/pusher', function(req, res){
     });
 });
 
+app.get('/assets/:user/:repo', function(req, res){
+    config.getConf(req.params.user, req.params.repo, function(err, conf){
+        if(err){
+            console.log(err);
+            res.send(err);
+        }else{
+            asset.getAssetList('assets', conf, function(err, assetArr){
+                if(err){
+                    console.log(err);
+                    res.send(err);
+                }else{
+                    async.forEachSeries(assetArr, function(item, forCallback){
+                        asset.updateAsset(item.path, conf, forCallback);
+                    }, function(err){
+                        if(err){
+                            console.log(err);
+                            res.send(err);
+                        }else{
+                            console.log('Assets updated to S3');
+                            res.send('done');
+                        }
+                    });
+                }
+            });
+        }
+    });
+});
+
 app.get('/index/:user/:repo', function(req, res){
     config.getConf(req.params.user, req.params.repo, function(err, conf){
         if(err){
@@ -43,7 +71,8 @@ app.get('/index/:user/:repo', function(req, res){
                                 forCallback('error getFinishedObj(): ' + err);
                             }else{
                                 if(finishedObj.isAsset){
-                                    asset.updateAsset(finishedObj.path, conf, forCallback);
+                                    console.log('Skipping asset: ' + finishedObj.path);
+                                    forCallback(null);
                                 }else{
                                     async.parallel([
                                         function(callback){
@@ -81,11 +110,11 @@ app.get('/index/:user/:repo', function(req, res){
                 });
             },
             function(callback){
-                asset.getAssetList('assets', conf, function(err, assetArr){
+                asset.getAssetList(conf.assets.path, conf, function(err, assetArr){
                     if(err){
                         console.log(err);
                     }else{
-                        async.forEach(assetArr, function(item, forCallback){
+                        async.forEachSeries(assetArr, function(item, forCallback){
                             asset.updateAsset(item.path, conf, forCallback);
                         }, function(err){
                             if(err){

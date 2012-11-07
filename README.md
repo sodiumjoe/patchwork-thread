@@ -13,13 +13,15 @@ The entire CMS consists of three parts:
 2. Indexer (this app).
 3. The front-end.
 
-To connect them, you simply add the content repo to Indexer's `config.json` file. At this point, you can hit Indexer's `/index` URL, and Indexer will parse the markdown files, index them to an indextank search index, and populate a MongoDB. 
+To connect them, you simply add the content GitHub repo to Indexer's `config.json` file. At this point, you can hit Indexer's `/index` URL, and Indexer will parse the markdown files, index them to an indextank search index, and populate a MongoDB. 
 
 You can also give the content repo Indexer's `/pusher` URL as a post-receive hook. Then the repo will trigger Indexer to update the search index and MongoDB whenever you push a new commit.
 
 The front-end app can then query the MongoDB to display the content. 
 
 ### How to use
+
+The `config.json` file contains an object called "config" which has an array containing any number of configurations. 
 
 ### Why not just use Jekyll?
 

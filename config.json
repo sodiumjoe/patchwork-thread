@@ -2,7 +2,7 @@
     "config": [{
         "searchify": {
             "url": null,
-            "privateEnvVar": "SEARCHIFY_PRIVATE_API_URL", 
+            "private_api_env_var": "SEARCHIFY_PRIVATE_API_URL", 
             "index": "afdocs"
         },
         "github": {
@@ -10,7 +10,7 @@
             "repo": "afdocs-test",
             "credentials": {
                 "username": "joebadmo",
-                "passwordEnvVar": "GITHUB_PASSWORD"
+                "password_env_var": "GITHUB_PASSWORD"
             }
         },
         "rootPath": "/",
@@ -18,8 +18,8 @@
         "assets": {
             "path": "assets",
             "S3": {
-                "access_key": "S3_ACCESS_KEY",
-                "secret": "S3_SECRET",
+                "access_key_env_var": "S3_ACCESS_KEY",
+                "secret_env_var": "S3_SECRET",
                 "bucket": "afdocs"
             }
         }
@@ -27,7 +27,7 @@
     {
         "searchify": {
             "url": null,
-            "privateEnvVar": "SEARCHIFY_PRIVATE_API_URL", 
+            "private_api_env_var": "SEARCHIFY_PRIVATE_API_URL", 
             "index": "pfdocs"
         },
         "github": {
@@ -35,7 +35,7 @@
             "repo": "pfdocs-test",
             "credentials": {
                 "username": "joebadmo",
-                "passwordEnvVar": "GITHUB_PASSWORD"
+                "password_env_var": "GITHUB_PASSWORD"
             }
         },
         "rootPath": "/",
@@ -43,8 +43,8 @@
         "assets": {
             "path": "img",
             "S3": {
-                "access_key": "S3_ACCESS_KEY",
-                "secret": "S3_SECRET",
+                "access_key_env_var": "S3_ACCESS_KEY",
+                "secret_env_var": "S3_SECRET",
                 "bucket": "afdocs"
             }
         }

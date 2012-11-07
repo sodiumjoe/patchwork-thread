@@ -35,74 +35,72 @@ app.get('/index/:user/:repo', function(req, res){
             console.log(err);
             res.send(err);
         }else{
-            content.parseDir(conf.rootPath, conf, function(filePath, forCallback){
-                content.getFinishedContentObj(filePath, conf, function(err, finishedObj){
-                    if(err){
-                        forCallback('error getFinishedObj(): ' + err);
-                    }else{
-                        if(finishedObj.isAsset){
-                            asset.downloadFile(finishedObj.path, conf, function(err){
-                                if(err){
-                                    forCallback(err);
+            async.parallel([
+                function(callback){
+                    content.parseDir(conf.rootPath, conf, function(filePath, forCallback){
+                        content.getFinishedContentObj(filePath, conf, function(err, finishedObj){
+                            if(err){
+                                forCallback('error getFinishedObj(): ' + err);
+                            }else{
+                                if(finishedObj.isAsset){
+                                    asset.updateAsset(finishedObj.path, conf, forCallback);
                                 }else{
-                                    asset.uploadToS3(finishedObj.path, conf, function(err){
-                                        if(err){
+                                    async.parallel([
+                                        function(callback){
+                                            database.addToDB(finishedObj, conf, function(err){
+                                                if(err){
+                                                    console.log(err);
+                                                }
+                                                callback(null);
+                                            });
+                                        },
+                                        function(callback){
+                                            search.indexToSearch(finishedObj, conf, function(err){
+                                                if(err){
+                                                    forCallback('error indexToSearch: ' + err);
+                                                }else{
+                                                    console.log(filePath + ' saved');
+                                                    forCallback(null);
+                                                }
+                                            });
+                                        }],
+                                        function(err, results){
                                             forCallback(err);
-                                        }else{
-                                            forCallback(null);
-                                        }
                                     });
                                 }
-                            });
-                        }else{
-                            database.addToDB(finishedObj, conf, function(err){
-                                if(err){
-                                    forCallback('error addToDB: ' + err);
-                                }else{
-                                    search.indexToSearch(finishedObj, conf, function(err){
-                                        if(err){
-                                            forCallback('error indexToSearch: ' + err);
-                                        }else{
-                                            console.log(filePath + ' saved');
-                                            forCallback(null);
-                                        }
-                                    });
-                                }
-                            });
-                        }
+                            }
+                        });
+                }, callback);
+            },
+            function(callback){
+                menu.indexMenu(conf, function(err){
+                    if(err){
+                        console.log(err);
+                    }
+                    callback(null);
+                });
+            },
+            function(callback){
+                asset.getAssetList('assets', conf, function(err, assetArr){
+                    if(err){
+                        console.log(err);
+                    }else{
+                        async.forEach(assetArr, function(item, forCallback){
+                            asset.updateAsset(item.path, conf, forCallback);
+                        }, function(err){
+                            if(err){
+                                console.log(err);
+                            }else{
+                                console.log('Assets updated to S3');
+                            }
+                            callback(null);
+                        });
                     }
                 });
-            }, 
-            function(err){
-                if(err){
-                    console.log(err);
-                    res.send(err);
-                }else{
-                    console.log('done');
-                    menu.indexMenu(conf, function(err){
-                        if(err){
-                            console.log(err);
-                        }else{
-                            res.send('done');
-                        }
-                    });
-                }
-            });
-
-            asset.getAssetList('assets', conf, function(err, assetArr){
-                if(err){
-                    console.log(err);
-                }else{
-                    async.forEach(assetArr, function(item, forCallback){
-                        asset.updateAsset(item.path, conf, forCallback);
-                    }, function(err){
-                        if(err){
-                            console.log(err);
-                        }else{
-                            console.log('Assets updated to S3');
-                        }
-                    });
-                }
+            }],
+            function(err, results){
+                console.log('done');
+                res.send('done');
             });
         }
     });

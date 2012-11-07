@@ -7,6 +7,7 @@ var async = require('async'),
     search = require('./lib/search'),
     models = require('./lib/models'),
     config = require('./lib/config'),
+    asset = require('./lib/asset'),
     payload = require('./lib/payload');
 
 app.use(express.logger());
@@ -19,7 +20,7 @@ app.configure(function(){
 
 app.post('/pusher', function(req, res){
     console.log('post received');
-    payload.push(req, function(err){
+    payload.pushPayload(req, function(err){
         if(err){
             console.log(err);
         }else{
@@ -87,30 +88,20 @@ app.get('/index/:user/:repo', function(req, res){
                     });
                 }
             });
-        }
-    });
-});
 
-var asset = require('./lib/asset');
-
-config.getConf('joebadmo', 'afdocs-test', function(err, conf){
-    asset.getAssetList('assets', conf, function(err, assetArr){
-        if(err){
-            console.log(err);
-        }else{
-            async.forEach(assetArr, function(item, forCallback){
-                asset.downloadFile(item.path, conf, function(err){
-                    if(err){
-                        forCallback(err);
-                    }else{
-                        asset.uploadToS3(item.path, conf, forCallback);
-                    }
-                });
-            }, function(err){
+            asset.getAssetList('assets', conf, function(err, assetArr){
                 if(err){
                     console.log(err);
                 }else{
-                    console.log('done');
+                    async.forEach(assetArr, function(item, forCallback){
+                        asset.updateAsset(item.path, conf, forCallback);
+                    }, function(err){
+                        if(err){
+                            console.log(err);
+                        }else{
+                            console.log('Assets updated to S3');
+                        }
+                    });
                 }
             });
         }

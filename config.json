@@ -14,7 +14,7 @@
             }
         },
         "rootPath": "/",
-        "db": "afdocs-rs",
+        "db": "afdocs",
         "assets": {
             "path": "assets",
             "S3": {
@@ -39,7 +39,7 @@
             }
         },
         "rootPath": "/",
-        "db": "pfdocs-rs",
+        "db": "pfdocs",
         "assets": {
             "path": "img",
             "S3": {

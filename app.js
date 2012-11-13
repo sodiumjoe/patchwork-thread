@@ -29,61 +29,6 @@ app.post('/pusher', function(req, res){
     });
 });
 
-app.get('/delassets/:user/:repo', function(req, res){
-    config.getConf(req.params.user, req.params.repo, function(err, conf){
-        if(err){
-            console.log(err);
-            res.send(err);
-        }else{
-            asset.getAssetList('assets', conf, function(err, assetArr){
-                if(err){
-                    console.log(err);
-                    res.send(err);
-                }else{
-                    async.forEachSeries(assetArr, function(item, forCallback){
-                        asset.removeAsset(item.path, conf, forCallback);
-                    }, function(err){
-                        if(err){
-                            console.log(err);
-                        }else{
-                            console.log('Assets updated to S3');
-                            res.send('done');
-                        }
-                    });
-                }
-            });
-        }
-    });
-});
-
-app.get('/assets/:user/:repo', function(req, res){
-    config.getConf(req.params.user, req.params.repo, function(err, conf){
-        if(err){
-            console.log(err);
-            res.send(err);
-        }else{
-            asset.getAssetList('assets', conf, function(err, assetArr){
-                if(err){
-                    console.log(err);
-                    res.send(err);
-                }else{
-                    async.forEachSeries(assetArr, function(item, forCallback){
-                        asset.updateAsset(item.path, conf, forCallback);
-                    }, function(err){
-                        if(err){
-                            console.log(err);
-                            res.send(err);
-                        }else{
-                            console.log('Assets updated to S3');
-                            res.send('done');
-                        }
-                    });
-                }
-            });
-        }
-    });
-});
-
 app.get('/index/:user/:repo', function(req, res){
     config.getConf(req.params.user, req.params.repo, function(err, conf){
         if(err){
@@ -96,6 +41,7 @@ app.get('/index/:user/:repo', function(req, res){
                 },
                 function(callback){
                     menu.indexMenu(conf, function(err){
+                        console.log('menu');
                         if(err){
                             console.log(err);
                         }

@@ -2,10 +2,7 @@
     "config": [{
         "github": {
             "user": "joebadmo",
-            "repo": "patchwork",
-            "credentials": {
-                "username": "joebadmo"
-            }
+            "repo": "patchwork"
         },
         "rootPath": "/",
         "assets": "assets"

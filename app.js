@@ -29,7 +29,24 @@ app.post('/pusher', function(req, res){
     });
 });
 
-app.get('/index/:user/:repo', function(req, res){
+app.get('/index/:part/:user/:repo', function(req, res){
+    var parts = {};
+    switch(req.params.part){
+        case "content":
+            parts.content = true;
+            break;
+        case "menu":
+            parts.menu = true;
+            break;
+        case "assets":
+            parts.assets = true;
+            break;
+        case "all":
+            parts.content = true;
+            parts.menu = true;
+            parts.assets = true;
+            break;
+    }
     config.getConf(req.params.user, req.params.repo, function(err, conf){
         if(err){
             console.log(err);
@@ -37,20 +54,35 @@ app.get('/index/:user/:repo', function(req, res){
         }else{
             async.parallel([
                 function(callback){
-                    indexContent(conf, callback);
-                },
-                function(callback){
-                    menu.indexMenu(conf, function(err){
-                        if(err){
-                            console.log(err);
-                        }
+                    if(parts.content){
+                        indexContent(conf, callback);
+                    }else{
                         callback(null);
-                    });
+                    }
                 },
                 function(callback){
-                    handleAssets(conf, callback);
+                    if(parts.menu){
+                        menu.indexMenu(conf, function(err){
+                            if(err){
+                                console.log(err);
+                            }
+                            callback(null);
+                        });
+                    }else{
+                        callback(null);
+                    }
+                },
+                function(callback){
+                    if(parts.assets){
+                        handleAssets(conf, callback);
+                    }else{
+                        callback(null);
+                    }
             }],
             function(err, results){
+                if(err){
+                    console.log(err);
+                }
                 console.log('done');
                 res.send('done');
             });
@@ -68,22 +100,23 @@ function indexContent(conf, callback){
                     console.log('Skipping asset: ' + finishedObj.path);
                     forCallback(null);
                 }else{
+                    console.log(filePath);
+                    forCallback(null);
                     async.parallel([
-                        function(callback){
+                        function(paraCallback){
                             database.addToDB(finishedObj, conf, function(err){
                                 if(err){
                                     console.log(err);
                                 }
-                                callback(null);
+                                paraCallback(null);
                             });
                         },
-                        function(callback){
+                        function(paraCallback){
                             search.indexToSearch(finishedObj, conf, function(err){
                                 if(err){
-                                    forCallback('error indexToSearch: ' + err);
+                                    paraCallback('error indexToSearch: ' + err);
                                 }else{
-                                    console.log(filePath + ' saved');
-                                    forCallback(null);
+                                    paraCallback(null);
                                 }
                             });
                         }],

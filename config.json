@@ -8,7 +8,6 @@
             }
         },
         "rootPath": "/",
-        "db": "joebadmo-patchwork",
         "assets": {
             "path": "assets",
             "S3": {

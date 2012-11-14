@@ -8,13 +8,6 @@
             }
         },
         "rootPath": "/",
-        "assets": {
-            "path": "assets",
-            "S3": {
-                "access_key_env_var": "S3_ACCESS_KEY",
-                "secret_env_var": "S3_SECRET",
-                "bucket": "joebadmo-patchwork"
-            }
-        }
+        "assets": "assets"
     }]
 }

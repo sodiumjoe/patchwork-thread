@@ -3,6 +3,31 @@
         "searchify": {
             "url": null,
             "private_api_env_var": "SEARCHIFY_PRIVATE_API_URL", 
+            "index": "joebadmo-patchwork"
+        },
+        "github": {
+            "user": "joebadmo",
+            "repo": "patchwork",
+            "credentials": {
+                "username": "joebadmo",
+                "password_env_var": "GITHUB_PASSWORD"
+            }
+        },
+        "rootPath": "/",
+        "db": "joebadmo-patchwork",
+        "assets": {
+            "path": "assets",
+            "S3": {
+                "access_key_env_var": "S3_ACCESS_KEY",
+                "secret_env_var": "S3_SECRET",
+                "bucket": "joebadmo-patchwork"
+            }
+        }
+    },
+    {
+        "searchify": {
+            "url": null,
+            "private_api_env_var": "SEARCHIFY_PRIVATE_API_URL", 
             "index": "afdocs"
         },
         "github": {

@@ -9,8 +9,7 @@
             "user": "joebadmo",
             "repo": "patchwork",
             "credentials": {
-                "username": "joebadmo",
-                "password_env_var": "GITHUB_PASSWORD"
+                "username": "joebadmo"
             }
         },
         "rootPath": "/",
@@ -21,56 +20,6 @@
                 "access_key_env_var": "S3_ACCESS_KEY",
                 "secret_env_var": "S3_SECRET",
                 "bucket": "joebadmo-patchwork"
-            }
-        }
-    },
-    {
-        "searchify": {
-            "url": null,
-            "private_api_env_var": "SEARCHIFY_PRIVATE_API_URL", 
-            "index": "afdocs"
-        },
-        "github": {
-            "user": "joebadmo",
-            "repo": "afdocs-test",
-            "credentials": {
-                "username": "joebadmo",
-                "password_env_var": "GITHUB_PASSWORD"
-            }
-        },
-        "rootPath": "/",
-        "db": "afdocs",
-        "assets": {
-            "path": "assets",
-            "S3": {
-                "access_key_env_var": "S3_ACCESS_KEY",
-                "secret_env_var": "S3_SECRET",
-                "bucket": "afdocs"
-            }
-        }
-    },
-    {
-        "searchify": {
-            "url": null,
-            "private_api_env_var": "SEARCHIFY_PRIVATE_API_URL", 
-            "index": "pfdocs"
-        },
-        "github": {
-            "user": "joebadmo",
-            "repo": "pfdocs-test",
-            "credentials": {
-                "username": "joebadmo",
-                "password_env_var": "GITHUB_PASSWORD"
-            }
-        },
-        "rootPath": "/",
-        "db": "pfdocs",
-        "assets": {
-            "path": "img",
-            "S3": {
-                "access_key_env_var": "S3_ACCESS_KEY",
-                "secret_env_var": "S3_SECRET",
-                "bucket": "afdocs"
             }
         }
     }]

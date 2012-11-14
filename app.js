@@ -41,7 +41,6 @@ app.get('/index/:user/:repo', function(req, res){
                 },
                 function(callback){
                     menu.indexMenu(conf, function(err){
-                        console.log('menu');
                         if(err){
                             console.log(err);
                         }

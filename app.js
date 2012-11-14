@@ -100,8 +100,6 @@ function indexContent(conf, callback){
                     console.log('Skipping asset: ' + finishedObj.path);
                     forCallback(null);
                 }else{
-                    console.log(filePath);
-                    forCallback(null);
                     async.parallel([
                         function(paraCallback){
                             database.addToDB(finishedObj, conf, function(err){
@@ -114,10 +112,9 @@ function indexContent(conf, callback){
                         function(paraCallback){
                             search.indexToSearch(finishedObj, conf, function(err){
                                 if(err){
-                                    paraCallback('error indexToSearch: ' + err);
-                                }else{
-                                    paraCallback(null);
+                                    console.log('error indexToSearch: ' + err);
                                 }
+                                paraCallback(null);
                             });
                         }],
                         function(err, results){

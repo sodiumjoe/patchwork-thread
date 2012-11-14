@@ -1,10 +1,5 @@
 {
     "config": [{
-        "searchify": {
-            "url": null,
-            "private_api_env_var": "SEARCHIFY_PRIVATE_API_URL", 
-            "index": "joebadmo-patchwork"
-        },
         "github": {
             "user": "joebadmo",
             "repo": "patchwork",

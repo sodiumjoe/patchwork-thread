@@ -145,4 +145,4 @@ function handleAssets(conf, callback){
     });
 };
 
-app.listen(process.env.VCAP_APP_PORT || 3000);
+app.listen(process.env.VCAP_APP_PORT || 4000);

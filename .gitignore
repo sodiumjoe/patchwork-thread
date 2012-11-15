@@ -1,4 +1,4 @@
 *.sw*
 .DS_Store
 assets/*
-config.json
+config.yml

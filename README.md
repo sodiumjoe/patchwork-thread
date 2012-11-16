@@ -7,7 +7,7 @@ You use Thread by pointing it at a content repository in GitHub like [this one](
 
 You can also set a [post-receive webhook](https://help.github.com/articles/post-receive-hooks) for a content repo on GitHub so that Thread will keep your database, search index, and S3 bucket whenever you commit changes to the content repo. 
 
-### How to use
+### Usage
 
 Note: The canonical deployment for Patchwork is on [AppFog](http://www.appfog.com).
 

@@ -1,5 +1,5 @@
-Patchwork-Thread
-================
+Thread
+======
 
 Thread is the data access and update piece of [Patchwork](http://patchworkcms.com). 
 

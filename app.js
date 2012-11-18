@@ -41,10 +41,14 @@ app.get('/index/:part/:user/:repo', function(req, res){
         case "assets":
             parts.assets = true;
             break;
+        case "blog":
+            parts.blog = true;
+            break;
         case "all":
             parts.content = true;
             parts.menu = true;
             parts.assets = true;
+            parts.blog = true;
             break;
     }
     config.getConf(req.params.user, req.params.repo, function(err, conf){
@@ -75,6 +79,13 @@ app.get('/index/:part/:user/:repo', function(req, res){
                 function(callback){
                     if(parts.assets){
                         handleAssets(conf, callback);
+                    }else{
+                        callback(null);
+                    }
+                },
+                function(callback){
+                    if(parts.blog){
+                        handleBlog(conf, callback);
                     }else{
                         callback(null);
                     }
@@ -121,6 +132,37 @@ function indexContent(conf, callback){
                             forCallback(err);
                     });
                 }
+            }
+        });
+    }, callback);
+};
+
+function handleBlog(conf, callback){
+    content.parseDir(conf.blog.path, conf, function(filePath, forCallback){
+        content.getFinishedContentObj(filePath, conf, function(err, finishedObj){
+            if(err){
+                forCallback('error getFinishedObj(): ' + err);
+            }else{
+                async.parallel([
+                    function(paraCallback){
+                        database.addToBlogDB(finishedObj, conf, function(err){
+                            if(err){
+                                console.log(err);
+                            }
+                            paraCallback(null);
+                        });
+                    }/*,
+                    function(paraCallback){
+                        search.indexToSearch(finishedObj, conf, function(err){
+                            if(err){
+                                console.log('error indexToSearch: ' + err);
+                            }
+                            paraCallback(null);
+                        });
+                    }*/],
+                    function(err, results){
+                        forCallback(err);
+                });
             }
         });
     }, callback);

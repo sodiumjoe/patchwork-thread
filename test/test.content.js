@@ -97,19 +97,17 @@ exports['test getContent'] = function (test) {
             }
         };
 
-    test.expect(4);
+    test.expect(2);
     content.getContent(path, conf, function(err, rawContent){
         if(err){
             console.log(err);
         }else{
             test.equal(rawContent.body, 'raw content');
-            test.equal(rawContent.isAsset, false);
             content.getContent(path2, conf, function(err2, rawContent2){
                 if(err2){
                     console.log(err2);
                 }else{
                     test.equal(rawContent2.body, 'raw content');
-                    test.equal(rawContent2.isAsset, true);
                     test.done();
                 }
             });

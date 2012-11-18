@@ -96,7 +96,7 @@ function indexContent(conf, callback){
             if(err){
                 forCallback('error getFinishedObj(): ' + err);
             }else{
-                if(finishedObj.isAsset){
+                if(conf.assets.path + '/' === filePath.substring(0, conf.assets.path.length + 1)){
                     console.log('Skipping asset: ' + finishedObj.path);
                     forCallback(null);
                 }else{

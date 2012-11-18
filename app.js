@@ -145,7 +145,7 @@ function handleBlog(conf, callback){
             }else{
                 async.parallel([
                     function(paraCallback){
-                        database.addToBlogDB(finishedObj, conf, function(err){
+                        database.addToDB(finishedObj, conf, function(err){
                             if(err){
                                 console.log(err);
                             }

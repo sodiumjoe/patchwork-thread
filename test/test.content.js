@@ -58,7 +58,7 @@ exports['test parseDir'] = function (test) {
                 }
             },
             assets: 'assets',
-            ignoreDirs: ['dir_to_ignore']
+            ignore: ['dir_to_ignore']
         },
         testContainer = [],
         fileFunc = function(p, callback){

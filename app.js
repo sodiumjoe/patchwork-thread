@@ -74,7 +74,9 @@ app.get('/index/:part/:user/:repo', function(req, res){
                 },
                 function(callback){
                     if(parts.assets){
-                        handleAssets(conf, callback);
+                        if(conf.assets){
+                            handleAssets(conf, callback);
+                        }
                     }else{
                         callback(null);
                     }
@@ -96,7 +98,7 @@ function indexContent(conf, callback){
             if(err){
                 forCallback('error getFinishedObj(): ' + err);
             }else{
-                if(conf.assets.path + '/' === filePath.substring(0, conf.assets.path.length + 1)){
+                if(conf.assets && conf.assets.path + '/' === filePath.substring(0, conf.assets.path.length + 1)){
                     console.log('Skipping asset: ' + finishedObj.path);
                     forCallback(null);
                 }else{

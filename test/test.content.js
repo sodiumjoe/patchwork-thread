@@ -6,6 +6,7 @@ var fakeRequest = function(options, callback){
 // Library to test
 var content = require('../lib/content')(fakeRequest);
 
+/*
 exports['test parseDir'] = function (test) {
     // test data
     var path = '',
@@ -76,6 +77,7 @@ exports['test parseDir'] = function (test) {
         test.done();
     });
 };
+*/
 
 exports['test getContent'] = function (test) {
     // test data

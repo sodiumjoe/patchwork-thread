@@ -6,7 +6,7 @@ var async = require('async'),
     database = require('./lib/database'),
     search = require('./lib/search'),
     models = require('./lib/models'),
-    config = require('./lib/config'),
+    config = require('./lib/config')(),
     asset = require('./lib/asset'),
     payload = require('./lib/payload');
 

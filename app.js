@@ -76,6 +76,9 @@ app.get('/index/:part/:user/:repo', function(req, res){
                     if(parts.assets){
                         if(conf.assets){
                             handleAssets(conf, callback);
+                        }else{
+                            console.log('no assets directory set in config.yml');
+                            callback(null);
                         }
                     }else{
                         callback(null);

@@ -106,6 +106,7 @@ exports['test asset.getAssetList'] = function (test) {
 
 exports['test asset.downloadFile'] = {
     'path exists': function(test){
+        test.expect(2);
         asset.downloadFile('fake/path/three/something.file', { github: { repoName: 'dummy' } }, function(err){
             test.equal(madeDirs.length, 0);
             test.equal(writtenFiles[0], './fake/path/three/something.file');
@@ -113,8 +114,8 @@ exports['test asset.downloadFile'] = {
         });
     },
     'path does not exist': function(test){
+        test.expect(4);
         asset.downloadFile('path/does/not/exist.file', { github: {repoName: 'dummy' } }, function(err){
-            test.expect(4);
             test.equal(madeDirs[0], './path');
             test.equal(madeDirs[1], './path/does');
             test.equal(madeDirs[2], './path/does/not');

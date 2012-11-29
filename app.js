@@ -7,7 +7,7 @@ var async = require('async'),
     search = require('./lib/search'),
     models = require('./lib/models'),
     config = require('./lib/config')(),
-    asset = require('./lib/asset'),
+    asset = require('./lib/asset')(),
     payload = require('./lib/payload');
 
 app.use(express.logger());

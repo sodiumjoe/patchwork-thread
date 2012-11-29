@@ -75,7 +75,7 @@ app.get('/index/:part/:user/:repo', function(req, res){
                 function(callback){
                     if(parts.assets){
                         if(conf.assets){
-                            handleAssets(conf, callback);
+                            asset.handleAssets(conf, callback);
                         }else{
                             console.log('no assets directory set in config.yml');
                             callback(null);
@@ -129,25 +129,6 @@ function indexContent(conf, callback){
             }
         });
     }, callback);
-};
-
-function handleAssets(conf, callback){
-    asset.getAssetList(conf.assets.path, conf, function(err, assetArr){
-        if(err){
-            console.log(err);
-        }else{
-            async.forEachSeries(assetArr, function(item, forCallback){
-                asset.updateAsset(item.path, conf, forCallback);
-            }, function(err){
-                if(err){
-                    console.log(err);
-                }else{
-                    console.log('Assets updated to S3');
-                }
-                callback(null);
-            });
-        }
-    });
 };
 
 app.listen(process.env.VCAP_APP_PORT || 4000);

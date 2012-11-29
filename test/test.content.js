@@ -6,7 +6,6 @@ var fakeRequest = function(options, callback){
 // Library to test
 var content = require('../lib/content')(fakeRequest);
 
-/*
 exports['test parseDir'] = function (test) {
     // test data
     var path = '',
@@ -38,12 +37,24 @@ exports['test parseDir'] = function (test) {
             {
                 path: 'dir_to_ignore',
                 type: 'dir'
+            },
+            {
+                path: 'READme.md',
+                type: 'file'
             }
         ],
         dataArray2 = [
             {
                 path: 'testDir/test4.md',
                 type: 'file'
+            },
+            {
+                path: 'testDir/.nestedDotfile',
+                type: 'file'
+            },
+            {
+                path: 'testDir/notFileOrDir',
+                type: 'fake'
             }
         ],
         conf = {
@@ -58,7 +69,9 @@ exports['test parseDir'] = function (test) {
                     }
                 }
             },
-            assets: 'assets',
+            assets: {
+                path: 'assets'
+            },
             ignore: ['dir_to_ignore']
         },
         testContainer = [],
@@ -77,7 +90,6 @@ exports['test parseDir'] = function (test) {
         test.done();
     });
 };
-*/
 
 exports['test getContent'] = function (test) {
     // test data

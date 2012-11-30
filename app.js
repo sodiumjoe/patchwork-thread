@@ -94,33 +94,24 @@ function indexContent(conf, callback){
     content.parseDir(conf.rootPath, conf, function(filePath, forCallback){
         content.getFinishedContentObj(filePath, conf, function(err, finishedObj){
             if(err){
-                forCallback('error getFinishedObj(): ' + err);
+                console.log('error getting obj: ' + err);
+                forCallback(null);
             }else{
-                if(conf.assets && conf.assets.path + '/' === filePath.substring(0, conf.assets.path.length + 1)){
-                    console.log('Skipping asset: ' + finishedObj.path);
-                    forCallback(null);
-                }else{
-                    async.parallel([
-                        function(paraCallback){
-                            database.addToDB(finishedObj, conf, function(err){
-                                if(err){
-                                    console.log(err);
-                                }
-                                paraCallback(null);
-                            });
-                        },
-                        function(paraCallback){
-                            search.indexToSearch(finishedObj, conf, function(err){
-                                if(err){
-                                    console.log('error indexToSearch: ' + err);
-                                }
-                                paraCallback(null);
-                            });
-                        }],
-                        function(err, results){
-                            forCallback(err);
-                    });
-                }
+                async.parallel([
+                    function(paraCallback){
+                        database.addToDB(finishedObj, conf, paraCallback);
+                    },
+                    function(paraCallback){
+                        search.indexToSearch(finishedObj, conf, function(err){
+                            if(err){
+                                console.log('error indexToSearch: ' + err);
+                            }
+                            paraCallback(null);
+                        });
+                    }],
+                    function(err, results){
+                        forCallback(err);
+                });
             }
         });
     }, callback);

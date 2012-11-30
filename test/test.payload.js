@@ -128,6 +128,7 @@ exports['test handleRemovals'] = function(test){
                 path: 'assets'
             }
         };
+
     payload.handleRemovals(deltaObj, conf, function(err){
         test.equal(fakeAsset.removed[0], 'assets/removed5.png');
         test.equal(fakeAsset.removed[1], 'assets/other/removed6.jpg');
@@ -144,4 +145,8 @@ exports['test handleRemovals'] = function(test){
         test.equal(fakeSearch.removed.length, 4);
         test.done();
     });
+};
+
+exports['test pushPayload'] = function(test){
+    test.done();
 };

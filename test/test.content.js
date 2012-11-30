@@ -6,7 +6,6 @@ var fakeRequest = function(options, callback){
 // Library to test
 var content = require('../lib/content')(fakeRequest);
 
-/*
 exports['test parseDir'] = function (test) {
     // test data
     var path = '',
@@ -38,12 +37,24 @@ exports['test parseDir'] = function (test) {
             {
                 path: 'dir_to_ignore',
                 type: 'dir'
+            },
+            {
+                path: 'READme.md',
+                type: 'file'
             }
         ],
         dataArray2 = [
             {
                 path: 'testDir/test4.md',
                 type: 'file'
+            },
+            {
+                path: 'testDir/.nestedDotfile',
+                type: 'file'
+            },
+            {
+                path: 'testDir/notFileOrDir',
+                type: 'fake'
             }
         ],
         conf = {
@@ -58,7 +69,9 @@ exports['test parseDir'] = function (test) {
                     }
                 }
             },
-            assets: 'assets',
+            assets: {
+                path: 'assets'
+            },
             ignore: ['dir_to_ignore']
         },
         testContainer = [],
@@ -77,7 +90,6 @@ exports['test parseDir'] = function (test) {
         test.done();
     });
 };
-*/
 
 exports['test getContent'] = function (test) {
     // test data
@@ -105,14 +117,14 @@ exports['test getContent'] = function (test) {
             console.log(err);
         }else{
             test.equal(rawContent.body, 'raw content');
-            content.getContent(path2, conf, function(err2, rawContent2){
-                if(err2){
-                    console.log(err2);
-                }else{
-                    test.equal(rawContent2.body, 'raw content');
-                    test.done();
-                }
-            });
+        }
+    });
+    content.getContent(path2, conf, function(err2, rawContent2){
+        if(err2){
+            console.log(err2);
+        }else{
+            test.equal(rawContent2.body, 'raw content');
+            test.done();
         }
     });
 };
@@ -120,7 +132,7 @@ exports['test getContent'] = function (test) {
 exports['test parseContent'] = function (test) {
     // test data
     var goodYamlFront = {
-            body: '---\ntitle: "Test Title 1"\nweight: 0\narbitrary: things\n---\n\nHello this is the content.\n\n### Hello\n\nMore content.\n\n### Anchor {#anchor}\n\nFinal.'
+            body: '---\ntitle: Test Title 1\nweight: 0\narbitrary: things\n---\n\nHello this is the content.\n\n### Hello\n\nMore content.\n\n### Anchor {#anchor}\n\nFinal.'
         },
         badYamlFront = {
             body: 'things'
@@ -132,11 +144,11 @@ exports['test parseContent'] = function (test) {
         test.equal(parsedObj.weight, 0);
         test.equal(parsedObj.arbitrary, 'things');
         test.equal(parsedObj.content, '<p>Hello this is the content.</p>\n\n<h3>Hello</h3>\n\n<p>More content.</p>\n\n<h3 id="anchor">Anchor </h3>\n\n<p>Final.</p>');
-        content.parseContent(badYamlFront, function(err, parsedObj){
-            test.equal(typeof parsedObj, 'undefined');
-            test.equal(err, "Error parsing yaml front matter because of no match in file: ");
-            test.done();
-        });
+    });
+    content.parseContent(badYamlFront, function(err, parsedObj){
+        test.equal(typeof parsedObj, 'undefined');
+        test.equal(err, "Error parsing yaml front matter because of no match in file: ");
+        test.done();
     });
 };
 

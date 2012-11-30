@@ -8,7 +8,7 @@ var async = require('async'),
     models = require('./lib/models'),
     config = require('./lib/config')(),
     asset = require('./lib/asset')(),
-    payload = require('./lib/payload');
+    payload = require('./lib/payload')();
 
 app.use(express.logger());
 app.configure(function(){

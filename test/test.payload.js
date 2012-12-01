@@ -155,3 +155,7 @@ exports['test handleRemovals'] = function(test){
         test.done();
     });
 };
+
+exports['test pushPayload'] = function(test){
+    test.done();
+};

@@ -143,7 +143,7 @@ exports['test parseContent'] = function (test) {
         test.equal(parsedObj.title, 'Test Title 1');
         test.equal(parsedObj.weight, 0);
         test.equal(parsedObj.arbitrary, 'things');
-        test.equal(parsedObj.content, '<p>Hello this is the content.</p>\n\n<h3>Hello</h3>\n\n<p>More content.</p>\n\n<h3 id="anchor">Anchor </h3>\n\n<p>Final.</p>');
+        test.equal(parsedObj.body, '<p>Hello this is the content.</p>\n\n<h3>Hello</h3>\n\n<p>More content.</p>\n\n<h3 id="anchor">Anchor </h3>\n\n<p>Final.</p>');
     });
     content.parseContent(badYamlFront, function(err, parsedObj){
         test.equal(typeof parsedObj, 'undefined');

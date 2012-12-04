@@ -5,40 +5,38 @@ var database = require('../lib/database'),
         var Doc = function(obj){
             this.obj = obj;
             this.save = function(callback){
-                fakeDB.doc.created = this.obj;
-                fakeDB.doc.created.saved = true;
+                fakeDB.doc = obj;
                 callback(null);
             };
+            return {
+                save: this.save
+            };
         };
-        Doc.findOne = function(pathObj, callback){
-            if(pathObj.path === 'path/to/oldobject'){
-                callback(null, fakeDB.doc.old);
-            }else if(pathObj.path === 'path/to/existing/redirect'){
-                callback(null, fakeDB.redirect.old);
-            }else{
-                callback(null, null);
-            }
-        };
-        Doc.save = function(callback){
-            callback(null);
+        Doc.find = function(pathObj){
+            return {
+                remove: function(callback){
+                    fakeDB.doc = null;
+                    callback(null);
+                }
+            };
         };
         var Blog = function(obj){
             this.obj = obj;
             this.save = function(callback){
-                fakeDB.blog.created = this.obj;
-                fakeDB.blog.created.saved = true;
+                fakeDB.doc = obj;
                 callback(null);
             };
+            return {
+                save: this.save
+            };
         };
-        Blog.findOne = function(pathObj, callback){
-            if(pathObj.path === 'blog/existing/post'){
-                callback(null, fakeDB.blog.old);
-            }else{
-                callback(null, null);
-            }
-        };
-        Blog.save = function(callback){
-            callback(null);
+        Blog.find = function(pathObj){
+            return {
+                remove: function(callback){
+                    fakeDB.doc = null;
+                    callback(null);
+                }
+            };
         };
         return {
             blog: {
@@ -47,38 +45,11 @@ var database = require('../lib/database'),
             Doc: Doc,
             Blog: Blog
         };
-    })();
+    })(),
 
-var fakeDB = {
+    fakeDB = {
         doc: {
-            created: {},
-            old: {
-                save: function(callback){
-                    fakeDB.doc.old.saved = true;
-                    callback(null);
-                },
-                saved: false
-            },
-        },
-        redirect: {
-            created: {},
-            old: {
-                save: function(callback){
-                    fakeDB.redirect.old.saved = true;
-                    callback(null);
-                },
-                saved: false
-            },
-        },
-        blog: {
-            created: {},
-            old: {
-                save: function(callback){
-                    fakeDB.blog.old.saved = true;
-                    callback(null);
-                },
-                saved: false
-            }
+            stuff: "old stuff"
         }
     },
     fakeExistingDoc = {
@@ -135,74 +106,69 @@ var fakeDB = {
 exports['test database.addToDb'] = {
     'update existing document': function (test) {
         database.addToDB(fakeExistingDoc, fakeConf, function(err){
-            test.equal(fakeDB.doc.old.path, 'path/to/oldobject');
-            test.equal(fakeDB.doc.old.title, 'Updated Thing');
-            test.equal(fakeDB.doc.old.content, 'Hello again, world');
-            test.equal(fakeDB.doc.old.category, 'cat1');
-            test.equal(fakeDB.doc.old.saved, true);
+            test.equal(fakeDB.doc.path, 'path/to/oldobject');
+            test.equal(fakeDB.doc.title, 'Updated Thing');
+            test.equal(fakeDB.doc.content, 'Hello again, world');
+            test.equal(fakeDB.doc.category, 'cat1');
             test.done();
         });
     }, 
     'create new document': function (test) {
         database.addToDB(fakeNewDoc, fakeConf, function(err){
-            test.equal(fakeDB.doc.created.path, 'path/to/newobject');
-            test.equal(fakeDB.doc.created.title, 'New Thing');
-            test.equal(fakeDB.doc.created.content, 'Hello world');
-            test.equal(fakeDB.doc.created.category, 'cat2');
-            test.equal(fakeDB.doc.created.saved, true);
+            test.equal(fakeDB.doc.path, 'path/to/newobject');
+            test.equal(fakeDB.doc.title, 'New Thing');
+            test.equal(fakeDB.doc.content, 'Hello world');
+            test.equal(fakeDB.doc.category, 'cat2');
             test.done();
         });
     }, 
     'update existing blog post': function (test) {
         database.addToDB(fakeExistingPost, fakeConf, function(err){
-            test.equal(fakeDB.blog.old.path, 'blog/existing/post');
-            test.equal(fakeDB.blog.old.title, 'Existing Blog Post');
-            test.equal(fakeDB.blog.old.content, 'This one is updated');
-            test.equal(fakeDB.blog.old.category, 'blogcat');
-            test.equal(fakeDB.blog.old.date, 'today');
-            test.equal(fakeDB.blog.old.year, '2012');
-            test.equal(fakeDB.blog.old.month, '12');
-            test.equal(fakeDB.blog.old.slug, 'post');
-            test.equal(fakeDB.blog.old.excerpt, 'This one...');
-            test.equal(fakeDB.blog.old.img, 'path/to/img.png');
-            test.equal(fakeDB.blog.old.saved, true);
+            test.equal(fakeDB.doc.path, 'blog/existing/post');
+            test.equal(fakeDB.doc.title, 'Existing Blog Post');
+            test.equal(fakeDB.doc.content, 'This one is updated');
+            test.equal(fakeDB.doc.category, 'blogcat');
+            test.equal(fakeDB.doc.date, 'today');
+            test.equal(fakeDB.doc.year, '2012');
+            test.equal(fakeDB.doc.month, '12');
+            test.equal(fakeDB.doc.slug, 'post');
+            test.equal(fakeDB.doc.excerpt, 'This one...');
+            test.equal(fakeDB.doc.img, 'path/to/img.png');
             test.done();
         });
     }, 
     'create new blog post': function (test) {
         database.addToDB(fakeNewPost, fakeConf, function(err){
-            test.equal(fakeDB.blog.created.path, 'blog/new/post2');
-            test.equal(fakeDB.blog.created.title, 'New Blog Post');
-            test.equal(fakeDB.blog.created.content, 'This one is new');
-            test.equal(fakeDB.blog.created.category, 'blogcat2');
-            test.equal(fakeDB.blog.created.date, 'today');
-            test.equal(fakeDB.blog.created.year, '2012');
-            test.equal(fakeDB.blog.created.month, '12');
-            test.equal(fakeDB.blog.created.slug, 'post2');
-            test.equal(fakeDB.blog.created.excerpt, 'This one... new');
-            test.equal(fakeDB.blog.created.img, 'path/to/img2.png');
-            test.equal(fakeDB.blog.created.saved, true);
+            test.equal(fakeDB.doc.path, 'blog/new/post2');
+            test.equal(fakeDB.doc.title, 'New Blog Post');
+            test.equal(fakeDB.doc.content, 'This one is new');
+            test.equal(fakeDB.doc.category, 'blogcat2');
+            test.equal(fakeDB.doc.date, 'today');
+            test.equal(fakeDB.doc.year, '2012');
+            test.equal(fakeDB.doc.month, '12');
+            test.equal(fakeDB.doc.slug, 'post2');
+            test.equal(fakeDB.doc.excerpt, 'This one... new');
+            test.equal(fakeDB.doc.img, 'path/to/img2.png');
             test.done();
         });
     },
     'update existing redirect': function(test){
         database.addToDB(fakeExistingRedirect, fakeConf, function(err){
-            test.equal(fakeDB.redirect.old.path, 'path/to/existing/redirect');
-            test.equal(fakeDB.redirect.old.title, 'Old Redirect');
-            test.equal(fakeDB.redirect.old.content, 'going somewhere else');
-            test.equal(fakeDB.redirect.old.category, 'cat3');
-            test.equal(fakeDB.redirect.old.redirect, 'other/place');
-            test.equal(fakeDB.redirect.old.saved, true);
+            test.equal(fakeDB.doc.path, 'path/to/existing/redirect');
+            test.equal(fakeDB.doc.title, 'Old Redirect');
+            test.equal(fakeDB.doc.content, 'going somewhere else');
+            test.equal(fakeDB.doc.category, 'cat3');
+            test.equal(fakeDB.doc.redirect, 'other/place');
             test.done();
         });
     },
     'create new redirect': function(test){
         database.addToDB(fakeNewRedirect, fakeConf, function(err){
-            test.equal(fakeDB.doc.created.path, 'path/to/new/redirect');
-            test.equal(fakeDB.doc.created.title, 'New Redirect');
-            test.equal(fakeDB.doc.created.content, 'going somewhere');
-            test.equal(fakeDB.doc.created.category, 'cat4');
-            test.equal(fakeDB.doc.created.redirect, 'other/new/place');
+            test.equal(fakeDB.doc.path, 'path/to/new/redirect');
+            test.equal(fakeDB.doc.title, 'New Redirect');
+            test.equal(fakeDB.doc.content, 'going somewhere');
+            test.equal(fakeDB.doc.category, 'cat4');
+            test.equal(fakeDB.doc.redirect, 'other/new/place');
             test.done();
         });
     }

@@ -1,4 +1,5 @@
 var async = require('async');
+
 // Dep injection
 var madeDirs = [],
     writtenFiles = [],
@@ -116,6 +117,47 @@ exports['test asset.downloadFile'] = {
             test.equal(madeDirs[1], './path/does');
             test.equal(madeDirs[2], './path/does/not');
             test.equal(writtenFiles[1], './path/does/not/exist.file');
+            test.done();
+        });
+    }
+};
+
+// dep injection
+
+exports['test asset.handleAssets'] = {
+    setUp: function (callback) {
+        conf = {
+            list: [],
+            assets: {
+                path: 'dummy'
+            },
+            assetsArr: [
+                { path: "assetPath1" },
+                { path: "assetPath2" },
+                { path: "assetPath3" },
+                { path: "assetPath4" },
+                { path: "assetPath5" }
+            ]
+        };
+
+        var assetsParam = {
+            getAssetList: function(path, conf, callback){
+                callback(null, conf.assetsArr);
+            },
+            updateAsset: function(path, conf, callback){
+                conf.list.push(path);
+                callback(null);
+            }
+        };
+        asset = require('../lib/asset')(fs, https, assetsParam);
+        callback();
+    },
+    tearDown: function (callback) {
+        asset = require('../lib/asset')(fs, https);
+        callback();
+    },
+    'test handleAssets': function(test){
+        asset.handleAssets(conf, function(err){
             test.done();
         });
     }

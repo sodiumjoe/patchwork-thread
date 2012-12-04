@@ -62,20 +62,15 @@ exports['test payload.parse'] = function (test) {
     };
     payload.parsePayload(req, conf, function(err, deltaObj){
         test.expect(8);
-        if(err){
-            console.log(err);
-            test.done();
-        }else{
-            test.equals(deltaObj.repository, 'github');
-            test.equals(deltaObj.user, 'defunkt');
-            test.equals(deltaObj.updated[0], 'filepath.rb');
-            test.equals(deltaObj.updated[1], 'test.markdown');
-            test.equals(deltaObj.removed[0], 'services/overview.markdown');
-            test.equals(deltaObj.updatedAssets[0], 'assets/asset.png');
-            test.equals(deltaObj.updatedAssets[1], 'assets/asset2.png');
-            test.equals(deltaObj.removedAssets[0], 'assets/removedAsset.png');
-            test.done();
-        }
+        test.equals(deltaObj.repository, 'github');
+        test.equals(deltaObj.user, 'defunkt');
+        test.equals(deltaObj.updated[0], 'filepath.rb');
+        test.equals(deltaObj.updated[1], 'test.markdown');
+        test.equals(deltaObj.removed[0], 'services/overview.markdown');
+        test.equals(deltaObj.updatedAssets[0], 'assets/asset.png');
+        test.equals(deltaObj.updatedAssets[1], 'assets/asset2.png');
+        test.equals(deltaObj.removedAssets[0], 'assets/removedAsset.png');
+        test.done();
     });
 };
 

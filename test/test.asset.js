@@ -156,8 +156,21 @@ exports['test asset.handleAssets'] = {
         asset = require('../lib/asset')(fs, https);
         callback();
     },
-    'test handleAssets': function(test){
+    'assets dir exists': function(test){
         asset.handleAssets(conf, function(err){
+            test.equal(conf.list[0], conf.assetsArr[0].path);
+            test.equal(conf.list[1], conf.assetsArr[1].path);
+            test.equal(conf.list[2], conf.assetsArr[2].path);
+            test.equal(conf.list[3], conf.assetsArr[3].path);
+            test.equal(conf.list[4], conf.assetsArr[4].path);
+            test.done();
+        });
+    },
+    'assets dir does not exist': function(test){
+        conf.assets = null;
+        conf.list = [];
+        asset.handleAssets(conf, function(err){
+            test.equal(conf.list.length, 0);
             test.done();
         });
     }

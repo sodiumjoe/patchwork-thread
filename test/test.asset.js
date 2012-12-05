@@ -122,8 +122,6 @@ exports['test asset.downloadFile'] = {
     }
 };
 
-// dep injection
-
 exports['test asset.handleAssets'] = {
     setUp: function (callback) {
         conf = {
@@ -140,6 +138,7 @@ exports['test asset.handleAssets'] = {
             ]
         };
 
+        // dep injection
         var assetsParam = {
             getAssetList: function(path, conf, callback){
                 callback(null, conf.assetsArr);

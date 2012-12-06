@@ -17,12 +17,61 @@ exports['test menu.indexMenu'] = {
 };
 
 exports['test menu.buildMenu'] = {
-    'blog and assets dirs': function(test){
-        /*
-        menu.buildMenu(path, conf, menuArray, function(err, menuArray){
+    setUp: function(callback){
+        var data = [ { path: 'something.md', type: 'file' }
+                   , { path: 'something-else.md', type: 'file' }
+                   , { path: 'fakeDir', type: 'dir' }
+                   , { path: 'blog', type: 'dir' }
+                   ]
+          , data2 = [ { path: 'fakeDir/other.md', type: 'file' }
+                    , { path: 'fakeDir/other2.md', type: 'file' }
+                    ]
+          , blogData = [ { path: 'should/not.md', type: 'file' }
+                       ]
+          , fakeContent = {
+                getFinishedContentObj: function(path, conf, callback){
+                    callback(null, { path: path, title: path, weight: path });
+                }
+            }
+          ;
+        menu = require('../lib/menu')(fakeContent);
+        conf = { 
+            github: {
+                ghrepo: {
+                    contents: function(path, callback){
+                        if(path==='fakeDir'){
+                            callback(null, data2);
+                        }else{
+                            callback(null, data);
+                        }
+                    }
+                }
+            }
+            , blog: { path: 'blog' }
+            , assets: { path: 'assets' }
+        };
+        menuArr = [];
+        callback(null);
+    }
+  , 'blog and assets dirs': function(test){
+        menu.buildMenu('root', conf, menuArr, function(err, menuArray){
+            test.equal(menuArray[0].path,   'something.md');
+            test.equal(menuArray[0].weight, 'something.md');
+            test.equal(menuArray[0].title,  'something.md');
+            test.equal(menuArray[1].path,   'something-else.md');
+            test.equal(menuArray[1].weight, 'something-else.md');
+            test.equal(menuArray[1].title,  'something-else.md');
+            test.equal(menuArray[2].path,   'fakeDir.markdown');
+            test.equal(menuArray[2].weight, 'fakeDir/index.markdown');
+            test.equal(menuArray[2].title,  'fakeDir/index.markdown');
+            test.equal(menuArray[2].children[0].path,   'fakeDir/other.md');
+            test.equal(menuArray[2].children[0].weight, 'fakeDir/other.md');
+            test.equal(menuArray[2].children[0].title,  'fakeDir/other.md');
+            test.equal(menuArray.length, 3);
+            test.equal(menuArray[2].children.length, 2);
+            console.log(menuArray);
+            test.done();
         });
-        */
-        test.done();
     }
 };
 

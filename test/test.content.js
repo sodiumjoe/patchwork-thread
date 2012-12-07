@@ -10,59 +10,34 @@ exports['test parseDir'] = function (test) {
     // test data
     var path = '',
         dataArray = [
-            {
-                path: '.dotfile',
-                type: 'file'
-            },
-            {
-                path: 'test1.markdown',
-                type: 'file'
-            },
-            {
-                path: 'test2.markdown',
-                type: 'file'
-            },
-            {
-                path: 'test3.md',
-                type: 'file'
-            },
-            {
-                path: 'testDir',
-                type: 'dir'
-            },
-            {
-                path: 'assets',
-                type: 'dir'
-            },
-            {
-                path: 'dir_to_ignore',
-                type: 'dir'
-            },
-            {
-                path: 'READme.md',
-                type: 'file'
-            }
+            { path: '.dotfile',         type: 'file' }
+          , { path: 'test1.markdown',   type: 'file' }
+          , { path: 'test2.markdown',   type: 'file' }
+          , { path: 'test3.md',         type: 'file' }
+          , { path: 'READme.md',        type: 'file' }
+          , { path: 'testDir',          type: 'dir' }
+          , { path: 'assets',           type: 'dir' }
+          , { path: 'dir_to_ignore',    type: 'dir' }
+          , { path: 'blog',             type: 'dir' }
         ],
         dataArray2 = [
-            {
-                path: 'testDir/test4.md',
-                type: 'file'
-            },
-            {
-                path: 'testDir/.nestedDotfile',
-                type: 'file'
-            },
-            {
-                path: 'testDir/notFileOrDir',
-                type: 'fake'
-            }
+            { path: 'testDir/test4.md',         type: 'file' }
+          , { path: 'testDir/.nestedDotfile',   type: 'file' }
+          , { path: 'testDir/notFileOrDir',     type: 'fake' }
+        ],
+        blogDataArray = [
+            { path: 'blog/test-blog-post.md',   type: 'file' }
+          , { path: 'blog/.nestedDotfile',      type: 'file' }
+          , { path: 'blog/notFileOrDir',        type: 'fake' }
         ],
         conf = {
             github: {
                 ghrepo: {
                     contents: function(path, callback){
-                        if (path === 'testDir'){
+                        if(path === 'testDir'){
                             callback(null, dataArray2);
+                        }else if(path === 'blog'){
+                            callback(null, blogDataArray);
                         }else{
                             callback(null, dataArray);
                         }
@@ -75,18 +50,21 @@ exports['test parseDir'] = function (test) {
             ignore: ['dir_to_ignore']
         },
         testContainer = [],
-        fileFunc = function(p, callback){
-            testContainer.push(p);
-            callback(null);
+        options = {
+            fileFunc: function(p, callback){
+                testContainer.push(p);
+                callback(null);
+            }
         };
 
-    test.expect(5);
-    content.parseDir(path, conf, fileFunc, function(err, rawContent){
+    test.expect(6);
+    content.parseDir(path, conf, options, function(err, rawContent){
         test.equal(testContainer[0], 'test1.markdown');
         test.equal(testContainer[1], 'test2.markdown');
         test.equal(testContainer[2], 'test3.md');
         test.equal(testContainer[3], 'testDir/test4.md');
-        test.equal(testContainer.length, 4);
+        test.equal(testContainer[4], 'blog/test-blog-post.md');
+        test.equal(testContainer.length, 5);
         test.done();
     });
 };

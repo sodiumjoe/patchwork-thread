@@ -34,6 +34,8 @@ exports['test menu.buildMenu'] = {
                 }
             }
           ;
+
+        fakeContent.parseDir = require('../lib/content')().parseDir;
         menu = require('../lib/menu')(fakeContent);
         conf = { 
             github: {
@@ -41,6 +43,8 @@ exports['test menu.buildMenu'] = {
                     contents: function(path, callback){
                         if(path==='fakeDir'){
                             callback(null, data2);
+                        }else if(path==='blog'){
+                            callback(null, blogData);
                         }else{
                             callback(null, data);
                         }

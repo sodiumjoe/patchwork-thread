@@ -36,6 +36,7 @@ exports['test menu.indexMenu'] = {
         menuArr = [];
     }
   , 'blog and assets dirs': function(test){
+        test.expect(6);
         menu.indexMenu(conf, function(err){
             test.equal(menuArr[0], 'built');
             test.equal(menuArr[1], 'root');
@@ -94,6 +95,7 @@ exports['test menu.buildMenu'] = {
         callback(null);
     }
   , 'blog and assets dirs': function(test){
+        test.expect(17);
         menu.buildMenu('root', conf, function(err, menuArray){
             test.equal(menuArray[0].path,   'something.md');
             test.equal(menuArray[0].weight, 'something.md');
@@ -134,6 +136,7 @@ exports['test menu.sortMenu'] = {
         callback(null);
     }
   , 'with recursion': function(test){
+        test.expect(9);
         menu.sortMenu(menuArr, function(err, menuArr){
             test.equal(menuArr[0].weight, 5);
             test.equal(menuArr[1].weight, 6);
@@ -167,6 +170,7 @@ exports['test menu.saveMenu'] = {
             }
         };
         menuArr = ['a', 1, 'f'];
+        test.expect(3);
         menu.saveMenu(menuArr, conf, function(err){
             test.equal(saved[0], 'a');
             test.equal(saved[1], 1);
@@ -198,6 +202,7 @@ exports['test menu.saveMenu'] = {
             callback(null, null);
         };
         menuArr = ['b', 2, 'g'];
+        test.expect(3);
         menu.saveMenu(menuArr, conf, function(err){
             test.equal(saved[0], 'b');
             test.equal(saved[1], 2);

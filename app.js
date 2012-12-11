@@ -91,30 +91,33 @@ app.get('/index/:part/:user/:repo', function(req, res){
 });
 
 function indexContent(conf, callback){
-    content.parseDir(conf.rootPath, conf, function(filePath, forCallback){
-        content.getFinishedContentObj(filePath, conf, function(err, finishedObj){
-            if(err){
-                console.log('error getting obj: ' + err);
-                forCallback(null);
-            }else{
-                async.parallel([
-                    function(paraCallback){
-                        database.addToDB(finishedObj, conf, paraCallback);
-                    },
-                    function(paraCallback){
-                        search.indexToSearch(finishedObj, conf, function(err){
-                            if(err){
-                                console.log('error indexToSearch: ' + err);
-                            }
-                            paraCallback(null);
-                        });
-                    }],
-                    function(err, results){
-                        forCallback(err);
-                });
-            }
-        });
-    }, callback);
+
+    var fileFunc = function(file, forCallback){
+            content.getFinishedContentObj(file.path, conf, function(err, finishedObj){
+                if(err){
+                    console.log('error getting obj: ' + err);
+                    forCallback(null);
+                }else{
+                    async.parallel([
+                        function(paraCallback){
+                            database.addToDB(finishedObj, conf, paraCallback);
+                        },
+                        function(paraCallback){
+                            search.indexToSearch(finishedObj, conf, function(err){
+                                if(err){
+                                    console.log('error indexToSearch: ' + err);
+                                }
+                                paraCallback(null);
+                            });
+                        }],
+                        function(err, results){
+                            forCallback(err, null);
+                    });
+                }
+            });
+        };
+    options = { fileFunc: fileFunc };
+    content.parseDir(conf.rootPath, conf, options, callback);
 };
 
 app.listen(process.env.VCAP_APP_PORT || 4000);

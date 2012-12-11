@@ -7,12 +7,44 @@ var async = require('async')
   ;
 
 exports['test menu.indexMenu'] = {
-    'blog and assets dirs': function(test){
-        /*
+    setUp: function(callback){
+        menuArr = [];
+        conf.rootPath = 'root';
+        conf.dummy = 'dummy';
+        var buildMenu = function(path, conf, callback){
+            menuArr.push('built');
+            menuArr.push(path);
+            menuArr.push(conf.dummy);
+            callback(null, menuArr);
+        };
+        var sortMenu = function(menuArr, callback){
+            menuArr.push('sorted');
+            callback(null, menuArr);
+        };
+        var saveMenu = function(menuArr, conf, callback){
+            menuArr.push(conf.dummy);
+            menuArr.push('saved');
+            callback(null);
+        };
+        menu = require('../lib/menu')(null, { buildMenu: buildMenu, sortMenu: sortMenu, saveMenu: saveMenu } );
+        callback(null);
+    }
+
+  , 'tearDown': function(callback){
+        menu = require('../lib/menu')();
+        callback(null);
+        menuArr = [];
+    }
+  , 'blog and assets dirs': function(test){
         menu.indexMenu(conf, function(err){
+            test.equal(menuArr[0], 'built');
+            test.equal(menuArr[1], 'root');
+            test.equal(menuArr[2], 'dummy');
+            test.equal(menuArr[3], 'sorted');
+            test.equal(menuArr[4], 'dummy');
+            test.equal(menuArr[5], 'saved');
+            test.done();
         });
-        */
-        test.done();
     }
 };
 

@@ -46,6 +46,8 @@ app.get('/index/:part/:user/:repo', function(req, res){
             parts.menu = true;
             parts.assets = true;
             break;
+        default:
+            res.send('"' + req.params.part + '" is not an indexable part');
     }
     config.getConf(req.params.user, req.params.repo, function(err, conf){
         if(err){
@@ -103,12 +105,7 @@ function indexContent(conf, callback){
                             database.addToDB(finishedObj, conf, paraCallback);
                         },
                         function(paraCallback){
-                            search.indexToSearch(finishedObj, conf, function(err){
-                                if(err){
-                                    console.log('error indexToSearch: ' + err);
-                                }
-                                paraCallback(null);
-                            });
+                            search.indexToSearch(finishedObj, conf, paraCallback)
                         }],
                         function(err, results){
                             forCallback(err, null);

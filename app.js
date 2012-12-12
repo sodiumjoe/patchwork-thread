@@ -1,6 +1,6 @@
 var async = require('async'),
     express = require('express'),
-    app = express.createServer(),
+    app = express(),
     content = require('./lib/content')(),
     menu = require('./lib/menu')(),
     database = require('./lib/database'),

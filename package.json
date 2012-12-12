@@ -12,5 +12,8 @@
 	  "request":"",
 	  "restify":"",
 	  "underscore.string":""
+  },
+  "scripts": {
+      "start": "node app.js"
   }
 }

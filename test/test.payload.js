@@ -5,7 +5,8 @@ var fakeContent = {
                 path: path
             };
             callback(null, finishedObj);
-        }
+        },
+        filterFiles: require('../lib/content')().filterFiles
     },
     fakeAsset = {
         contents: [],
@@ -42,10 +43,27 @@ var fakeContent = {
             fakeSearch.removed.push(path);
             callback(null)
         }
+    },
+    fakeConf = {
+        assets: {
+            path: 'assets'
+        },
+        github: {
+            ghrepo: {
+                contents: function(path, callback){
+                    callback(null, {path: path, type: 'file'});
+                }
+            }
+        }
+    },
+    fakeConfig = {
+        getConf: function(user, repo, callback){
+            callback(null, fakeConf);
+        }
     };
 
 // Libarary to test
-var payload = require('../lib/payload')(fakeContent, fakeAsset, fakeDatabase, fakeSearch);
+var payload = require('../lib/payload')(fakeContent, fakeAsset, fakeDatabase, fakeSearch, fakeConfig);
 
 // test data
 var req = {
@@ -55,17 +73,12 @@ var req = {
 };
 
 exports['test payload.parse'] = function (test) {
-    var conf = {
-        assets: {
-            path: 'assets'
-        }
-    };
-    payload.parsePayload(req, conf, function(err, deltaObj){
+    payload.parsePayload(req, function(err, conf, deltaObj){
         test.expect(8);
         test.equals(deltaObj.repository, 'github');
         test.equals(deltaObj.user, 'defunkt');
-        test.equals(deltaObj.updated[0], 'filepath.rb');
-        test.equals(deltaObj.updated[1], 'test.markdown');
+        test.equals(deltaObj.updated[0], 'test.markdown');
+        test.equals(deltaObj.updated.length, 1);
         test.equals(deltaObj.removed[0], 'services/overview.markdown');
         test.equals(deltaObj.updatedAssets[0], 'assets/asset.png');
         test.equals(deltaObj.updatedAssets[1], 'assets/asset2.png');

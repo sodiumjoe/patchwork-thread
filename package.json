@@ -4,9 +4,10 @@
   "dependencies":{
 	  "async":"",
       "express":"",
-      "knox":"",
 	  "js-yaml":"",
+      "knox":"",
 	  "mongoose":"",
+	  "nodeunit":"",
 	  "octonode":"",
 	  "pagedown":"",
 	  "request":"",

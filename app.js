@@ -47,13 +47,14 @@ app.get('/index/:part/:user/:repo', function(req, res){
             parts.assets = true;
             break;
         default:
-            res.send('"' + req.params.part + '" is not an indexable part');
+            res.send('"' + req.params.part + '" is not an indexable part.');
     }
     config.getConf(req.params.user, req.params.repo, function(err, conf){
         if(err){
             console.log(err);
             res.send(err);
         }else{
+            res.send('Index request received.');
             async.parallel([
                 function(callback){
                     if(parts.content){
@@ -86,7 +87,6 @@ app.get('/index/:part/:user/:repo', function(req, res){
                     console.log(err);
                 }
                 console.log('done');
-                res.send('done');
             });
         }
     });

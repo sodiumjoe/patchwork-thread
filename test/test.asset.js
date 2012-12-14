@@ -1,93 +1,76 @@
 var async = require('async');
 
 // Dep injection
-var madeDirs = [],
-    writtenFiles = [],
-    fs = {
-    stat: function(path, callback){
-        var goodPaths = ['./fake', './fake/path', './fake/path/three'],
-            pathExists = false;
-        async.forEach(goodPaths, function(item, callback){
-            if(item == path){
-                pathExists = true;
-            }
-            callback(null);
-        },
-        function(err){
-            if(pathExists){
-                callback(null);
-            }else{
-                callback({errno: 2});
-            }
-        });
-    },
-    mkdir: function(path, callback){
-        madeDirs.push(path);
-        callback(null);
-    },
-    writeFile: function(path, data, encoding, callback){
-        writtenFiles.push(path);
-        callback(null);
-    }
-},
-    https = {
-    get: function(options, callback){
-        var response = {
-            setEncoding: function(dummy){
-                return;
-            },
-            on: function(param, callback){
-                if(param === 'data'){
-                    callback('data');
-                }else if(param === 'end'){
-                    callback();
+var madeDirs = []
+  , writtenFiles = []
+  , fs = { stat: function(path, callback){
+                     var goodPaths = ['./fake', './fake/path', './fake/path/three']
+                       , pathExists = false
+                       ;
+                     async.forEach(goodPaths, function(item, callback){
+                         if(item == path){
+                             pathExists = true;
+                         }
+                         callback(null);
+                     },
+                     function(err){
+                         if(pathExists){
+                             callback(null);
+                         }else{
+                             callback({errno: 2});
+                         }
+                     });
+                 }
+         , mkdir: function(path, callback){
+               madeDirs.push(path);
+               callback(null);
+           }
+         , writeFile: function(path, data, encoding, callback){
+               writtenFiles.push(path);
+               callback(null);
+           }
+         }
+  , https = {
+        get: function(options, callback){
+            var response = {
+                setEncoding: function(dummy){
+                    return;
+                },
+                on: function(param, callback){
+                    if(param === 'data'){
+                        callback('data');
+                    }else if(param === 'end'){
+                        callback();
+                    }
                 }
-            }
-        };
-        callback(response);
+            };
+            callback(response);
+        }
     }
-};
+  ;
 // Libarary to test
 var asset = require('../lib/asset')(fs, https);
 
 // test data
-var dir = [
-    {
-        path: 'asset1.png',
-        type: 'file',
-    },
-    {
-        path: 'asset2.png',
-        type: 'file',
-    },
-    {
-        path: 'asset3.png',
-        type: 'file',
-    },
-    {
-        path: 'assetDir',
-        type: 'dir'
-    }
-],
-    dir2 = [
-    {
-        path: 'assetDir/asset4.png',
-        type: 'file'
-    }
-],
-    conf = {
-        github: {
-            ghrepo: {
-                contents: function(path, callback){
-                    if(path === 'assetDir'){
-                        callback(null, dir2);
-                    }else{
-                        callback(null, dir);
-                    }
-                }
-            }
-        }
-    };
+var dir = [ { path: 'asset1.png', type: 'file' }
+          , { path: 'asset2.png', type: 'file' }
+          , { path: 'asset3.png', type: 'file' }
+          , { path: 'assetDir', type: 'dir' }
+          ]
+  , dir2 = [ { path: 'assetDir/asset4.png', type: 'file' } ]
+  , conf = { github: {
+                   ghrepo: {
+                       contents: function(path, callback){
+                           if(path === 'assetDir'){
+                               callback(null, dir2);
+                           }else{
+                               callback(null, dir);
+                           }
+                       }
+                   }
+               }
+           }
+  ;
 
 exports['test asset.getAssetList'] = function (test) {
     test.expect(5);

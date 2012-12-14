@@ -1,14 +1,15 @@
-var async = require('async'),
-    express = require('express'),
-    app = express(),
-    content = require('./lib/content')(),
-    menu = require('./lib/menu')(),
-    database = require('./lib/database'),
-    search = require('./lib/search'),
-    models = require('./lib/models'),
-    config = require('./lib/config')(),
-    asset = require('./lib/asset')(),
-    payload = require('./lib/payload')();
+var async = require('async')
+  , express = require('express')
+  , app = express()
+  , content = require('./lib/content')()
+  , menu = require('./lib/menu')()
+  , database = require('./lib/database')
+  , search = require('./lib/search')
+  , models = require('./lib/models')
+  , config = require('./lib/config')()
+  , asset = require('./lib/asset')()
+  , payload = require('./lib/payload')()
+  ;
 
 app.use(express.logger());
 app.configure(function(){

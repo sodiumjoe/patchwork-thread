@@ -1,14 +1,15 @@
-var async = require('async'),
-    express = require('express'),
-    app = express.createServer(),
-    content = require('./lib/content')(),
-    menu = require('./lib/menu'),
-    database = require('./lib/database'),
-    search = require('./lib/search'),
-    models = require('./lib/models'),
-    config = require('./lib/config'),
-    asset = require('./lib/asset'),
-    payload = require('./lib/payload');
+var async = require('async')
+  , express = require('express')
+  , app = express()
+  , content = require('./lib/content')()
+  , menu = require('./lib/menu')()
+  , database = require('./lib/database')
+  , search = require('./lib/search')
+  , models = require('./lib/models')
+  , config = require('./lib/config')()
+  , asset = require('./lib/asset')()
+  , payload = require('./lib/payload')()
+  ;
 
 app.use(express.logger());
 app.configure(function(){
@@ -46,12 +47,15 @@ app.get('/index/:part/:user/:repo', function(req, res){
             parts.menu = true;
             parts.assets = true;
             break;
+        default:
+            res.send('"' + req.params.part + '" is not an indexable part.');
     }
     config.getConf(req.params.user, req.params.repo, function(err, conf){
         if(err){
             console.log(err);
             res.send(err);
         }else{
+            res.send('Index request received.');
             async.parallel([
                 function(callback){
                     if(parts.content){
@@ -74,12 +78,7 @@ app.get('/index/:part/:user/:repo', function(req, res){
                 },
                 function(callback){
                     if(parts.assets){
-                        if(conf.assets){
-                            handleAssets(conf, callback);
-                        }else{
-                            console.log('no assets directory set in config.yml');
-                            callback(null);
-                        }
+                        asset.handleAssets(conf, callback);
                     }else{
                         callback(null);
                     }
@@ -89,65 +88,34 @@ app.get('/index/:part/:user/:repo', function(req, res){
                     console.log(err);
                 }
                 console.log('done');
-                res.send('done');
             });
         }
     });
 });
 
 function indexContent(conf, callback){
-    content.parseDir(conf.rootPath, conf, function(filePath, forCallback){
-        content.getFinishedContentObj(filePath, conf, function(err, finishedObj){
-            if(err){
-                forCallback('error getFinishedObj(): ' + err);
-            }else{
-                if(conf.assets && conf.assets.path + '/' === filePath.substring(0, conf.assets.path.length + 1)){
-                    console.log('Skipping asset: ' + finishedObj.path);
+
+    var fileFunc = function(file, forCallback){
+            content.getFinishedContentObj(file.path, conf, function(err, finishedObj){
+                if(err){
+                    console.log('error getting obj: ' + err);
                     forCallback(null);
                 }else{
                     async.parallel([
                         function(paraCallback){
-                            database.addToDB(finishedObj, conf, function(err){
-                                if(err){
-                                    console.log(err);
-                                }
-                                paraCallback(null);
-                            });
+                            database.addToDB(finishedObj, conf, paraCallback);
                         },
                         function(paraCallback){
-                            search.indexToSearch(finishedObj, conf, function(err){
-                                if(err){
-                                    console.log('error indexToSearch: ' + err);
-                                }
-                                paraCallback(null);
-                            });
+                            search.indexToSearch(finishedObj, conf, paraCallback)
                         }],
                         function(err, results){
-                            forCallback(err);
+                            forCallback(err, null);
                     });
                 }
-            }
-        });
-    }, callback);
-};
-
-function handleAssets(conf, callback){
-    asset.getAssetList(conf.assets.path, conf, function(err, assetArr){
-        if(err){
-            console.log(err);
-        }else{
-            async.forEachSeries(assetArr, function(item, forCallback){
-                asset.updateAsset(item.path, conf, forCallback);
-            }, function(err){
-                if(err){
-                    console.log(err);
-                }else{
-                    console.log('Assets updated to S3');
-                }
-                callback(null);
             });
-        }
-    });
+        };
+    options = { fileFunc: fileFunc };
+    content.parseDir(conf.rootPath, conf, options, callback);
 };
 
 app.listen(process.env.VCAP_APP_PORT || 4000);

@@ -4,13 +4,17 @@
   "dependencies":{
 	  "async":"",
       "express":"",
-      "knox":"",
 	  "js-yaml":"",
+      "knox":"",
 	  "mongoose":"",
+	  "nodeunit":"",
 	  "octonode":"",
 	  "pagedown":"",
 	  "request":"",
 	  "restify":"",
 	  "underscore.string":""
+  },
+  "scripts": {
+      "start": "node app.js"
   }
 }

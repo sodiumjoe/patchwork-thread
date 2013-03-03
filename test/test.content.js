@@ -106,33 +106,33 @@ exports['test parseContent'] = function (test) {
         },
         badYamlFront = {
             body: 'things'
-        };
+        },
+        parsedObj;
 
     test.expect(6);
-    content.parseContent(goodYamlFront, function(err, parsedObj){
-        test.equal(parsedObj.title, 'Test Title 1');
-        test.equal(parsedObj.weight, 0);
-        test.equal(parsedObj.arbitrary, 'things');
-        test.equal(parsedObj.body, '<p>Hello this is the content.</p>\n\n<h3>Hello</h3>\n\n<p>More content.</p>\n\n<h3 id="anchor">Anchor </h3>\n\n<p>Final.</p>');
-    });
-    content.parseContent(badYamlFront, function(err, parsedObj){
-        test.equal(typeof parsedObj, 'undefined');
-        test.equal(err, "Error parsing yaml front matter because of no match in file: ");
-        test.done();
-    });
+    parsedObj = content.parseContent(goodYamlFront);
+    test.equal(parsedObj.title, 'Test Title 1');
+    test.equal(parsedObj.weight, 0);
+    test.equal(parsedObj.arbitrary, 'things');
+    test.equal(parsedObj.body, '<p>Hello this is the content.</p>\n\n<h3>Hello</h3>\n\n<p>More content.</p>\n\n<h3 id="anchor">Anchor </h3>\n\n<p>Final.</p>');
+
+    parsedObj = content.parseContent(badYamlFront);
+    test.equal(typeof parsedObj, 'string');
+    test.equal(parsedObj, "Error parsing yaml front matter because of no match in file: ");
+    test.done();
 };
 
 exports['test addExtraMetadata'] = function (test) {
     // test data
     var path = 'test/path/to/object.markdown',
-        parsedObj = {};
+        parsedObj = {},
+        newObj;
 
     test.expect(4);
-    content.addExtraMetadata(parsedObj, path, function(err, newObj){
-        test.equal(newObj.docid, 'test-path-to-object');
-        test.equal(newObj.path, 'test/path/to/object');
-        test.equal(newObj.category, 'test.path.to');
-        test.equal(newObj.weight, 0);
-        test.done();
-    });
+    newObj = content.addExtraMetadata(parsedObj, path);
+    test.equal(newObj.docid, 'test-path-to-object');
+    test.equal(newObj.path, 'test/path/to/object');
+    test.equal(newObj.category, 'test.path.to');
+    test.equal(newObj.weight, 0);
+    test.done();
 };

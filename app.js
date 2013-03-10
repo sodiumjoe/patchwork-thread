@@ -95,27 +95,21 @@ app.get('/index/:part/:user/:repo', function(req, res){
 
 function indexContent(conf, callback){
 
-    var fileFunc = function(file, forCallback){
-            content.getFinishedContentObj(file.path, conf, function(err, finishedObj){
-                if(err){
-                    console.log('error getting obj: ' + err);
-                    forCallback(null);
-                }else{
-                    async.parallel([
-                        function(paraCallback){
-                            database.addToDB(finishedObj, conf, paraCallback);
-                        },
-                        function(paraCallback){
-                            search.indexToSearch(finishedObj, conf, paraCallback)
-                        }],
-                        function(err, results){
-                            forCallback(err, null);
-                    });
-                }
-            });
-        };
-    options = { fileFunc: fileFunc };
-    content.parseDir(conf.rootPath, conf, options, callback);
+    function errorHandler(err, callback){
+        if(err) console.log(err);
+        callback(null);
+    };
+
+    function indexFile(file){
+        content.getFinishedContentObj(file.path, conf, function(err, finishedObj){
+            database.addToDB(finishedObj, conf, errorHandler);
+            search.indexToSearch(finishedObj, conf, errorHandler)
+        });
+    };
+
+    content.getFileList(conf, function(err, files){
+        files.forEach(indexFile);
+    });
 };
 
 app.listen(process.env.VCAP_APP_PORT || 4000);

@@ -6,69 +6,6 @@ var fakeRequest = function(options, callback){
 // Library to test
 var content = require('../lib/content')(fakeRequest);
 
-exports['test parseDir'] = function (test) {
-    // test data
-    var path = '',
-        dataArray = [
-            { path: '.dotfile',         type: 'file' }
-          , { path: 'test1.markdown',   type: 'file' }
-          , { path: 'test2.markdown',   type: 'file' }
-          , { path: 'test3.md',         type: 'file' }
-          , { path: 'READme.md',        type: 'file' }
-          , { path: 'testDir',          type: 'dir' }
-          , { path: 'assets',           type: 'dir' }
-          , { path: 'dir_to_ignore',    type: 'dir' }
-          , { path: 'blog',             type: 'dir' }
-        ],
-        dataArray2 = [
-            { path: 'testDir/test4.md',         type: 'file' }
-          , { path: 'testDir/.nestedDotfile',   type: 'file' }
-          , { path: 'testDir/notFileOrDir',     type: 'fake' }
-        ],
-        blogDataArray = [
-            { path: 'blog/test-blog-post.md',   type: 'file' }
-          , { path: 'blog/.nestedDotfile',      type: 'file' }
-          , { path: 'blog/notFileOrDir',        type: 'fake' }
-        ],
-        conf = {
-            github: {
-                ghrepo: {
-                    contents: function(path, callback){
-                        if(path === 'testDir'){
-                            callback(null, dataArray2);
-                        }else if(path === 'blog'){
-                            callback(null, blogDataArray);
-                        }else{
-                            callback(null, dataArray);
-                        }
-                    }
-                }
-            },
-            assets: {
-                path: 'assets'
-            },
-            ignore: ['dir_to_ignore']
-        },
-        testContainer = [],
-        options = {
-            fileFunc: function(p, callback){
-                testContainer.push(p);
-                callback(null, p);
-            }
-        };
-
-    test.expect(6);
-    content.parseDir(path, conf, options, function(err, rawContent){
-        test.equal(testContainer[0].path, 'test1.markdown');
-        test.equal(testContainer[1].path, 'test2.markdown');
-        test.equal(testContainer[2].path, 'test3.md');
-        test.equal(testContainer[3].path, 'testDir/test4.md');
-        test.equal(testContainer[4].path, 'blog/test-blog-post.md');
-        test.equal(testContainer.length, 5);
-        test.done();
-    });
-};
-
 exports['test getContent'] = function (test) {
     // test data
     var path = '/',
@@ -135,4 +72,97 @@ exports['test addExtraMetadata'] = function (test) {
     test.equal(newObj.category, 'test.path.to');
     test.equal(newObj.weight, 0);
     test.done();
+};
+
+// content test data
+var path = '/'
+  , dataArray = [
+        { path: '.dotfile',         type: 'file' }
+      , { path: 'test1.markdown',   type: 'file' }
+      , { path: 'test2.markdown',   type: 'file' }
+      , { path: 'test3.md',         type: 'file' }
+      , { path: 'READme.md',        type: 'file' }
+      , { path: 'testDir',          type: 'dir' }
+      , { path: 'assets',           type: 'dir' }
+      , { path: 'dir_to_ignore',    type: 'dir' }
+      , { path: 'blog',             type: 'dir' }
+    ]
+  , dataArray2 = [
+        { path: 'testDir/test4.md',         type: 'file' }
+      , { path: 'testDir/.nestedDotfile',   type: 'file' }
+      , { path: 'testDir/notFileOrDir',     type: 'fake' }
+    ]
+  , blogDataArray = [
+        { path: 'blog/test-blog-post.md',   type: 'file' }
+      , { path: 'blog/.nestedDotfile',      type: 'file' }
+      , { path: 'blog/notFileOrDir',        type: 'fake' }
+    ]
+  , conf = {
+        github: {
+            ghrepo: {
+                contents: function(path, callback){
+                    if(path === 'testDir'){
+                        callback(null, dataArray2);
+                    }else if(path === 'blog'){
+                        callback(null, blogDataArray);
+                    }else{
+                        callback(null, dataArray);
+                    }
+                }
+            }
+        }
+      , assets: {
+            path: 'assets'
+        }
+      , ignore: ['dir_to_ignore']
+    }
+
+  , flatTree
+  , tree = [ 'one'
+            , 'two'
+            , 'three'
+            , 'four'
+            , [ 'five'
+              , 'six'
+              , 'seven' 
+              ]
+            , [ 'eight'
+              , 'nine'
+              , [ 'ten'
+                , 'eleven'
+                , 'twelve'
+                ]
+              ]
+            , 'thirteen'
+            ]
+  ;
+
+exports['test getContentTree'] = function (test) {
+    test.expect(6);
+    content.getContentTree(path, conf, function(err, tree){
+        test.equal(tree[0].path, 'test1.markdown');
+        test.equal(tree[1].path, 'test2.markdown');
+        test.equal(tree[2].path, 'test3.md');
+        test.equal(tree[3][0].path, 'testDir/test4.md');
+        test.equal(tree[4][0].path, 'blog/test-blog-post.md');
+        test.equal(tree.length, 5);
+        test.done();
+    });
+};
+exports['test flattenTree'] = function (test) {
+    //test data
+    flatTree = content.flattenTree(tree); 
+    test.equal(flatTree.length, 13);
+    test.done();
+};
+exports['test getFileList'] = function (test) {
+    content.getFileList(conf, function(err, fileList){
+        test.equal(fileList[0].path, 'test1.markdown');
+        test.equal(fileList[1].path, 'test2.markdown');
+        test.equal(fileList[2].path, 'test3.md');
+        test.equal(fileList[3].path, 'testDir/test4.md');
+        test.equal(fileList[4].path, 'blog/test-blog-post.md');
+        test.equal(fileList.length, 5);
+        test.done();
+    });
 };

@@ -1,4 +1,4 @@
-// Test override function
+// mock request
 var fakeRequest = function(options, callback){
     callback(null, { body: 'raw content' }, 'body');
 };
@@ -118,43 +118,43 @@ var path = '/'
     }
 
   , flatTree
-  , tree = [ 'one'
-            , 'two'
-            , 'three'
-            , 'four'
-            , [ 'five'
-              , 'six'
-              , 'seven' 
-              ]
-            , [ 'eight'
-              , 'nine'
-              , [ 'ten'
-                , 'eleven'
-                , 'twelve'
-                ]
-              ]
-            , 'thirteen'
-            ]
+  , tree = [ { path: 'one', type: 'file' }
+           , { path: 'two', type: 'file' }
+           , { path: 'three', type: 'file' }
+           , { path: 'four', type: 'dir', children: [ { path: 'four/one', type: 'file' }
+                                                    , { path: 'four/two', type: 'file' }
+                                                    ]
+             }
+           , { path: 'five', type: 'file' }
+           , { path: 'six', type: 'dir', children: [ { path: 'six/one', type: 'file' }
+                                                   , { path: 'six/two', type: 'dir', children: [ { path: 'six/two/one', type: 'file' } ] }
+                                                   ]
+             }
+           ]
   ;
 
+
+
 exports['test getContentTree'] = function (test) {
-    test.expect(6);
+    test.expect(8);
     content.getContentTree(path, conf, function(err, tree){
         test.equal(tree[0].path, 'test1.markdown');
         test.equal(tree[1].path, 'test2.markdown');
         test.equal(tree[2].path, 'test3.md');
-        test.equal(tree[3][0].path, 'testDir/test4.md');
-        test.equal(tree[4][0].path, 'blog/test-blog-post.md');
+        test.equal(tree[3].path, 'testDir');
+        test.equal(tree[3].children[0].path, 'testDir/test4.md');
+        test.equal(tree[4].path, 'blog');
+        test.equal(tree[4].children[0].path, 'blog/test-blog-post.md');
         test.equal(tree.length, 5);
         test.done();
     });
 };
 exports['test flattenTree'] = function (test) {
-    //test data
     flatTree = content.flattenTree(tree); 
-    test.equal(flatTree.length, 13);
+    test.equal(flatTree.length, 8);
     test.done();
 };
+/*
 exports['test getFileList'] = function (test) {
     content.getFileList(conf, function(err, fileList){
         test.equal(fileList[0].path, 'test1.markdown');
@@ -166,3 +166,4 @@ exports['test getFileList'] = function (test) {
         test.done();
     });
 };
+*/

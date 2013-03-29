@@ -57,8 +57,8 @@ var fakeContent = {
         }
     },
     fakeConfig = {
-        getConf: function(user, repo, callback){
-            callback(null, fakeConf);
+        getConf: function(user, repo){
+            return fakeConf;
         }
     };
 

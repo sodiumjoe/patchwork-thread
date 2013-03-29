@@ -19,7 +19,7 @@ exports['test menu.indexMenu'] = {
         };
         var sortMenu = function(menuArr, callback){
             menuArr.push('sorted');
-            callback(null, menuArr);
+            return menuArr;
         };
         var saveMenu = function(menuArr, conf, callback){
             menuArr.push(conf.dummy);
@@ -125,7 +125,6 @@ exports['test menu.buildMenu'] = {
         });
     }
 };
-/*
 
 exports['test menu.sortMenu'] = {
     setUp: function(callback){
@@ -144,19 +143,19 @@ exports['test menu.sortMenu'] = {
         callback(null);
     }
   , 'with recursion': function(test){
+        var sortedMenu = [];
         test.expect(9);
-        menu.sortMenu(menuArr, function(err, menuArr){
-            test.equal(menuArr[0].weight, 5);
-            test.equal(menuArr[1].weight, 6);
-            test.equal(menuArr[2].weight, 7);
-            test.equal(menuArr[3].weight, 8);
-            test.equal(menuArr[4].weight, 9);
-            test.equal(menuArr[5].weight, 10);
-            test.equal(menuArr[5].children[0].weight, 4);
-            test.equal(menuArr[5].children[1].weight, 5);
-            test.equal(menuArr[5].children[2].weight, 6);
-            test.done();
-        });
+        sortedMenu = menu.sortMenu(menuArr);
+        test.equal(sortedMenu[0].weight, 5);
+        test.equal(sortedMenu[1].weight, 6);
+        test.equal(sortedMenu[2].weight, 7);
+        test.equal(sortedMenu[3].weight, 8);
+        test.equal(sortedMenu[4].weight, 9);
+        test.equal(sortedMenu[5].weight, 10);
+        test.equal(sortedMenu[5].children[0].weight, 4);
+        test.equal(sortedMenu[5].children[1].weight, 5);
+        test.equal(sortedMenu[5].children[2].weight, 6);
+        test.done();
     }
 };
 
@@ -219,4 +218,3 @@ exports['test menu.saveMenu'] = {
         });
     }
 };
-*/

@@ -1,12 +1,12 @@
-var fakeEnvironment = {
+var env = {
         GITHUB_PASSWORD: 'Something',
         SEARCHIFY_PRIVATE_API_URL: 'Something2',
         FAKE_SEARCHIFY_ENV_VAR: 'Something3'
     },
-    fakeEnvironment2 = {
+    env2 = {
         GITHUB_PASSWORD: 'Something'
     },
-    fakeRestify = {
+    restify = {
         createJsonClient: function(trash){
             return {
                 get: function(dummy, callback){
@@ -18,7 +18,7 @@ var fakeEnvironment = {
             }
         }
     },
-    fakeMongoose = {
+    mongoose = {
         createConnection: function(url, db){
             return {
                 on: function(dummy1, dummy2){
@@ -30,7 +30,7 @@ var fakeEnvironment = {
             }
         }
     },
-    fakeKnox = {
+    knox = {
         createClient: function(obj){
             return obj;
         }
@@ -42,15 +42,15 @@ var fakeEnvironment = {
     }),
     repo = client.repo('joebadmo/patchwork'),
     fakeConf = {
-    github: {
-        user: 'joebadmo',
-        repo: 'patchwork'
-    },
-    db: 'explicitDB'
-};
+        github: {
+            user: 'joebadmo',
+            repo: 'patchwork'
+        },
+        db: 'explicitDB'
+    };
 
 // Libarary to test
-var config = require('../lib/config')('./test/test-data/test.config.yml', fakeEnvironment, fakeRestify, fakeMongoose);
+var config = require('../lib/config')({configFile: './test/test-data/test.config.yml', env: env, restify: restify, mongoose: mongoose});
 
 exports['test getConf'] = function(test){
     test.expect(5);
@@ -79,14 +79,14 @@ exports['test configureGitHub'] = function (test) {
 
 exports['test configureSearchify'] = {
     'no searchify': function(test){
-        config = require('../lib/config')('./test/test-data/test.config.yml', fakeEnvironment2, fakeRestify);
+        config = require('../lib/config')({configFile: './test/test-data/test.config.yml', env: env2, restify: restify});
         config.configureSearchify(fakeConf);
         test.equal(fakeConf.searchify.url, null);
         test.equal(fakeConf.searchify.index, 'joebadmo-patchwork');
         test.done();
     },
     'default env var': function(test){
-        config = require('../lib/config')('./test/test-data/test.config.yml', fakeEnvironment, fakeRestify);
+        config = require('../lib/config')({configFile: './test/test-data/test.config.yml', env: env, restify: restify});
         config.configureSearchify(fakeConf);
         test.equal(fakeConf.searchify.url, 'Something2');
         test.equal(fakeConf.searchify.index, 'joebadmo-patchwork');
@@ -120,6 +120,7 @@ exports['test configureDatabase'] = {
         test.done();
     },
     'local dev env': function(test){
+        config = require('../lib/config')({configFile: './test/test-data/test.config.yml', env: env, restify: restify, mongoose: mongoose});
         config.configureDatabase(fakeConf);
         test.equal(fakeConf.Doc, 'document');
         test.equal(fakeConf.Menu, 'menu');
@@ -138,25 +139,17 @@ exports['test configureDatabase'] = {
     },
     'no matching db in VCAP_SERVICES': function(test){
         var vcap = JSON.stringify({
-            'mongodb-1.8': [
-                {
-                    name: 'fakeDB',
-                    credentials: {
-                        url: null
-                    }
-                },
-                {
-                    name: 'joebadmo-patchwork',
-                    credentials: {
-                        url: 'testURL'
-                    }
-                }
-            ]
+            'mongodb-1.8': [ { name: 'fakeDB'
+                             , credentials: { url: null }
+                             }
+                           , { name: 'joebadmo-patchwork'
+                             , credentials: { url: 'testURL' }
+                             }
+                           ]
         });
-
-        fakeEnvironment.VCAP_SERVICES = vcap;
+        env.VCAP_SERVICES = vcap;
         fakeConf.db = 'no-match';
-        config = require('../lib/config')('./test/test-data/test.config.yml', fakeEnvironment, fakeRestify, fakeMongoose);
+        config = require('../lib/config')({configFile: './test/test-data/test.config.yml', env: env, restify: restify, mongoose: mongoose});
         config.configureDatabase(fakeConf);
         test.equal(fakeConf.mongoConnectionURI, 'localhost');
         test.equal(fakeConf.Doc, 'document');
@@ -192,9 +185,9 @@ exports['test configureS3'] = {
         test.done();
     },
     'default key and secret': function(test){
-        fakeEnvironment.S3_ACCESS_KEY = 'fakeKey';
-        fakeEnvironment.S3_SECRET = 'fakeSecret';
-        config = require('../lib/config')('./test/test-data/test.config.yml', fakeEnvironment, fakeRestify, fakeMongoose, fakeKnox);
+        env.S3_ACCESS_KEY = 'fakeKey';
+        env.S3_SECRET = 'fakeSecret';
+        config = require('../lib/config')({configFile: './test/test-data/test.config.yml', env: env, restify: restify, mongoose: mongoose, knox: knox});
         config.configureS3(fakeConf);
         test.equal(fakeConf.assets.S3.key, 'fakeKey');
         test.equal(fakeConf.assets.S3.secret, 'fakeSecret');
@@ -204,11 +197,11 @@ exports['test configureS3'] = {
         test.done();
     },
     'explicit key and secret': function(test){
-        fakeEnvironment.CUSTOM_S3_ACCESS_KEY = 'customFakeKey';
-        fakeEnvironment.CUSTOM_S3_SECRET = 'customFakeSecret';
+        env.CUSTOM_S3_ACCESS_KEY = 'customFakeKey';
+        env.CUSTOM_S3_SECRET = 'customFakeSecret';
         fakeConf.assets.S3.access_key_env_var = 'CUSTOM_S3_ACCESS_KEY';
         fakeConf.assets.S3.secret_env_var = 'CUSTOM_S3_SECRET';
-        config = require('../lib/config')('./test/test-data/test.config.yml', fakeEnvironment, fakeRestify, fakeMongoose, fakeKnox);
+        config = require('../lib/config')({configFile: './test/test-data/test.config.yml', env: env, restify: restify, mongoose: mongoose, knox: knox});
         config.configureS3(fakeConf);
         test.equal(fakeConf.assets.S3.key, 'customFakeKey');
         test.equal(fakeConf.assets.S3.secret, 'customFakeSecret');

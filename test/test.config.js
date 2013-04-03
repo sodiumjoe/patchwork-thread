@@ -1,53 +1,28 @@
-var env = {
-        GITHUB_PASSWORD: 'Something',
-        SEARCHIFY_PRIVATE_API_URL: 'Something2',
-        FAKE_SEARCHIFY_ENV_VAR: 'Something3'
-    },
-    env2 = {
-        GITHUB_PASSWORD: 'Something'
-    },
-    restify = {
-        createJsonClient: function(trash){
-            return {
-                get: function(dummy, callback){
-                    var response = {
-                        statusCode: 200
-                    };
-                    callback(null, null, response, null);
-                }
-            }
-        }
-    },
-    mongoose = {
-        createConnection: function(url, db){
-            return {
-                on: function(dummy1, dummy2){
-                    return;
-                },
-                model: function(modelName, schema){
-                    return modelName;
-                }
-            }
-        }
-    },
-    knox = {
-        createClient: function(obj){
-            return obj;
-        }
-    },
-    github = require('octonode'),
-    client = github.client({
-        username: 'joebadmo',
-        password: 'Something'
-    }),
-    repo = client.repo('joebadmo/patchwork'),
-    fakeConf = {
-        github: {
-            user: 'joebadmo',
-            repo: 'patchwork'
-        },
-        db: 'explicitDB'
-    };
+var env = { GITHUB_PASSWORD: 'Something'
+          , SEARCHIFY_PRIVATE_API_URL: 'Something2'
+          , FAKE_SEARCHIFY_ENV_VAR: 'Something3'
+          }
+  , env2 = { GITHUB_PASSWORD: 'Something' }
+  , restify = { createJsonClient: function(trash){
+                    return {
+                           get: function(dummy, callback){
+                                    var response = { statusCode: 200 };
+                                    callback(null, null, response, null);
+                                }
+                           }
+                    }
+              }
+  , mongoose = { createConnection: function(url, db){
+                    return { on: function(dummy1, dummy2){ return; }
+                           , model: function(modelName, schema){ return modelName; }
+                           }
+                 }
+               }
+  , knox = { createClient: function(obj){ return obj; } }
+  , github = require('octonode')
+  , client = github.client({ username: 'joebadmo', password: 'Something' })
+  , repo = client.repo('joebadmo/patchwork')
+  , fakeConf = { github: { user: 'joebadmo', repo: 'patchwork' }, db: 'explicitDB' };
 
 // Libarary to test
 var config = require('../lib/config')({configFile: './test/test-data/test.config.yml', env: env, restify: restify, mongoose: mongoose});
@@ -138,7 +113,7 @@ exports['test configureDatabase'] = {
         test.done();
     },
     'no matching db in VCAP_SERVICES': function(test){
-        var vcap = JSON.stringify({
+        env.VCAP_SERVICES = JSON.stringify({
             'mongodb-1.8': [ { name: 'fakeDB'
                              , credentials: { url: null }
                              }
@@ -147,7 +122,6 @@ exports['test configureDatabase'] = {
                              }
                            ]
         });
-        env.VCAP_SERVICES = vcap;
         fakeConf.db = 'no-match';
         config = require('../lib/config')({configFile: './test/test-data/test.config.yml', env: env, restify: restify, mongoose: mongoose});
         config.configureDatabase(fakeConf);

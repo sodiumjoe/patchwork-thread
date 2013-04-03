@@ -1,69 +1,54 @@
 // deps to inject
-var fakeContent = {
-        getFinishedContentObj: function(path, conf, callback){
-            var finishedObj = {
-                path: path
-            };
-            callback(null, finishedObj);
-        },
-        filterFiles: require('../lib/content')().filterFiles
-    },
-    fakeAsset = {
-        contents: [],
-        removed: [],
-        updateAsset: function(path, conf, callback){
-            fakeAsset.contents.push(path);
-            callback(null);
-        },
-        removeAsset: function(path, conf, callback){
-            fakeAsset.removed.push(path);
-            callback(null);
-        }
-    },
-    fakeDatabase = {
-        contents: [],
-        removed: [],
-        addToDB: function(finishedObj, conf, callback){
-            fakeDatabase.contents.push(finishedObj.path);
-            callback(null);
-        },
-        removeFromDB: function(path, conf, callback){
-            fakeDatabase.removed.push(path);
-            callback(null)
-        }
-    },
-    fakeSearch = {
-        contents: [],
-        removed: [],
-        indexToSearch: function(finishedObj, conf, callback){
-            fakeSearch.contents.push(finishedObj.path);
-            callback(null);
-        },
-        deindexFromSearch: function(path, conf, callback){
-            fakeSearch.removed.push(path);
-            callback(null)
-        }
-    },
-    fakeConf = {
-        assets: {
-            path: 'assets'
-        },
-        github: {
-            ghrepo: {
-                contents: function(path, callback){
-                    callback(null, {path: path, type: 'file'});
+var content = { getFinishedContentObj: function(path, conf, callback){
+                  var finishedObj = { path: path };
+                  callback(null, finishedObj);
                 }
+              , filterFiles: require('../lib/content')().filterFiles
+              }
+  , asset = { contents: []
+            , removed: []
+            , updateAsset: function(path, conf, callback){
+                  asset.contents.push(path);
+                  callback(null);
+              }
+            , removeAsset: function(path, conf, callback){
+                  asset.removed.push(path);
+                  callback(null);
+              }
             }
-        }
-    },
-    fakeConfig = {
-        getConf: function(user, repo){
-            return fakeConf;
-        }
-    };
+  , database = { contents: []
+               , removed: []
+               , addToDB: function(finishedObj, conf, callback){
+                     database.contents.push(finishedObj.path);
+                     callback(null);
+                 }
+               , removeFromDB: function(path, conf, callback){
+                     database.removed.push(path);
+                     callback(null)
+                 }
+               }
+  , search = { contents: []
+             , removed: []
+             , indexToSearch: function(finishedObj, conf, callback){
+                   search.contents.push(finishedObj.path);
+                   callback(null);
+               }
+             , deindexFromSearch: function(path, conf, callback){
+                   search.removed.push(path);
+                   callback(null)
+               }
+             }
+  , conf = { assets: { path: 'assets' }
+           , github: { ghrepo: {
+                           contents: function(path, callback){ callback(null, {path: path, type: 'file'}); }
+                       }
+                     }
+           }
+  , config = { getConf: function(user, repo){ return conf; } }
+  ;
 
 // Libarary to test
-var payload = require('../lib/payload')(fakeContent, fakeAsset, fakeDatabase, fakeSearch, fakeConfig);
+var payload = require('../lib/payload')({content: content, asset: asset, database: database, search: search, config: config});
 
 // test data
 var req = {
@@ -99,16 +84,16 @@ exports['test handleUpdates'] = function(test){
     };
 
     payload.handleUpdates(deltaObj, 'dummy', function(err){
-        test.equal(fakeDatabase.contents[0], 'test.markdown');
-        test.equal(fakeDatabase.contents[1], 'test2.markdown');
-        test.equal(fakeDatabase.contents[2], 'random/test3.markdown');
-        test.equal(fakeDatabase.contents[3], 'random/other/test4.markdown');
-        test.equal(fakeDatabase.contents.length, 4);
-        test.equal(fakeSearch.contents[0], 'test.markdown');
-        test.equal(fakeSearch.contents[1], 'test2.markdown');
-        test.equal(fakeSearch.contents[2], 'random/test3.markdown');
-        test.equal(fakeSearch.contents[3], 'random/other/test4.markdown');
-        test.equal(fakeSearch.contents.length, 4);
+        test.equal(database.contents[0], 'test.markdown');
+        test.equal(database.contents[1], 'test2.markdown');
+        test.equal(database.contents[2], 'random/test3.markdown');
+        test.equal(database.contents[3], 'random/other/test4.markdown');
+        test.equal(database.contents.length, 4);
+        test.equal(search.contents[0], 'test.markdown');
+        test.equal(search.contents[1], 'test2.markdown');
+        test.equal(search.contents[2], 'random/test3.markdown');
+        test.equal(search.contents[3], 'random/other/test4.markdown');
+        test.equal(search.contents.length, 4);
         test.done();
     });
 };
@@ -130,11 +115,11 @@ exports['test handleUpdatedAssets'] = function(test){
         };
 
     payload.handleUpdatedAssets(deltaObj, conf, function(err){
-        test.equal(fakeAsset.contents[0], 'assets/test.png');
-        test.equal(fakeAsset.contents[1], 'assets/test2.png');
-        test.equal(fakeAsset.contents[2], 'assets/random/test3.png');
-        test.equal(fakeAsset.contents[3], 'assets/random/other/test4.png');
-        test.equal(fakeAsset.contents.length, 4);
+        test.equal(asset.contents[0], 'assets/test.png');
+        test.equal(asset.contents[1], 'assets/test2.png');
+        test.equal(asset.contents[2], 'assets/random/test3.png');
+        test.equal(asset.contents[3], 'assets/random/other/test4.png');
+        test.equal(asset.contents.length, 4);
         test.done();
     });
 };
@@ -150,16 +135,16 @@ exports['test handleRemovals'] = function(test){
             ]
         };
     payload.handleRemovals(deltaObj, {assets: { path:'assets'} }, function(err){
-        test.equal(fakeDatabase.removed[0], 'removed.md');
-        test.equal(fakeDatabase.removed[1], 'removed2.md');
-        test.equal(fakeDatabase.removed[2], 'dir/removed3.md');
-        test.equal(fakeDatabase.removed[3], 'dir/other/removed4.md');
-        test.equal(fakeDatabase.removed.length, 4);
-        test.equal(fakeSearch.removed[0], 'removed.md');
-        test.equal(fakeSearch.removed[1], 'removed2.md');
-        test.equal(fakeSearch.removed[2], 'dir/removed3.md');
-        test.equal(fakeSearch.removed[3], 'dir/other/removed4.md');
-        test.equal(fakeSearch.removed.length, 4);
+        test.equal(database.removed[0], 'removed.md');
+        test.equal(database.removed[1], 'removed2.md');
+        test.equal(database.removed[2], 'dir/removed3.md');
+        test.equal(database.removed[3], 'dir/other/removed4.md');
+        test.equal(database.removed.length, 4);
+        test.equal(search.removed[0], 'removed.md');
+        test.equal(search.removed[1], 'removed2.md');
+        test.equal(search.removed[2], 'dir/removed3.md');
+        test.equal(search.removed[3], 'dir/other/removed4.md');
+        test.equal(search.removed.length, 4);
         test.done();
     });
 };

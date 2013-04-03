@@ -49,7 +49,7 @@ var madeDirs = []
     }
   ;
 // Libarary to test
-var asset = require('../lib/asset')(fs, https);
+var asset = require('../lib/asset')({ fs: fs, https: https});
 
 // test data
 var dir = [ { path: 'asset1.png', type: 'file' }
@@ -122,7 +122,7 @@ exports['test asset.handleAssets'] = {
         };
 
         // dep injection
-        var assetsParam = {
+        var assets = {
             getAssetList: function(path, conf, callback){
                 callback(null, conf.assetsArr);
             },
@@ -131,7 +131,7 @@ exports['test asset.handleAssets'] = {
                 callback(null);
             }
         };
-        asset = require('../lib/asset')(fs, https, assetsParam);
+        asset = require('../lib/asset')({fs: fs, https: https, assets: assets});
         callback();
     },
     tearDown: function (callback) {

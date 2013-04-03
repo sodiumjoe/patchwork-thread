@@ -1,30 +1,25 @@
-// mock request
-var fakeRequest = function(options, callback){
+var request = function(options, callback){
     callback(null, { body: 'raw content' }, 'body');
 };
 
 // Library to test
-var content = require('../lib/content')(fakeRequest);
+var content = require('../lib/content')({request: request});
 
 exports['test getContent'] = function (test) {
     // test data
-    var path = '/',
-        path2 = 'assets/something.png',
-        conf = {
-            github: {
-                ghrepo: {
-                    contents: function(path, callback){
-                        var data = {
-                            type: 'file'
-                        };
-                        callback(null, data);
-                    }
-                }
-            },
-            assets: {
-                path: 'assets'
-            }
-        };
+    var path = '/'
+      , path2 = 'assets/something.png'
+      , conf = { github: {
+                     ghrepo: {
+                         contents: function(path, callback){
+                             var data = { type: 'file' };
+                             callback(null, data);
+                         }
+                     }
+                 }
+               , assets: { path: 'assets' }
+               }
+      ;
 
     test.expect(2);
     content.getContent(path, conf, function(err, rawContent){

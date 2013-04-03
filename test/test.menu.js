@@ -26,7 +26,7 @@ exports['test menu.indexMenu'] = {
             menuArr.push('saved');
             callback(null);
         };
-        menu = require('../lib/menu')(null, { buildMenu: buildMenu, sortMenu: sortMenu, saveMenu: saveMenu } );
+        menu = require('../lib/menu')( { menu: { buildMenu: buildMenu, sortMenu: sortMenu, saveMenu: saveMenu } });
         callback(null);
     }
 
@@ -77,7 +77,7 @@ exports['test menu.buildMenu'] = {
         fakeContent.getContentTree = require('../lib/content')().getContentTree;
         fakeContent.isDir = require('../lib/content')().isDir;
         fakeContent.isMarkdownFile = require('../lib/content')().isMarkdownFile;
-        menu = require('../lib/menu')(fakeContent);
+        menu = require('../lib/menu')({content: fakeContent});
         conf = { 
             github: {
                 ghrepo: {

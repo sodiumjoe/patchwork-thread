@@ -1,20 +1,20 @@
 {
- "name":"patchwork-thread",
-  "version":"0.0.1",
-  "dependencies":{
-	  "async":"",
-      "express":"",
-	  "js-yaml":"",
-      "knox":"",
-	  "mongoose":"",
-	  "nodeunit":"",
-	  "octonode":"",
-	  "pagedown":"",
-	  "request":"",
-	  "restify":"",
-	  "underscore.string":""
+  "name": "patchwork-thread",
+  "version": "0.0.1",
+  "dependencies": {
+    "async": "~0.2.8",
+    "express": "~3.2.4",
+    "js-yaml": "~2.0.5",
+    "mongoose": "~3.6.11",
+    "octonode": "~0.3.1",
+    "pagedown": "~1.1.0",
+    "q": "~0.9.3",
+    "underscore": "~1.4.4"
   },
   "scripts": {
-      "start": "node app.js"
+    "start": "node app.js"
+  },
+  "devDependencies": {
+    "should": "~1.2.2"
   }
 }

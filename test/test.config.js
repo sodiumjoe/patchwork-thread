@@ -23,7 +23,7 @@ describe( 'lib/config.js', function(){
                          , password: 'Password'
                          }
                      , user: 'joe'
-                     , repo: 'patchwork'
+                     , repo: { name: 'joebadmo/patchwork' }
                      }
                 }
             , 'no username': 
@@ -32,7 +32,7 @@ describe( 'lib/config.js', function(){
                         { password: 'Password'
                         }
                     , user: 'joe'
-                    , repo: 'patchwork'
+                    , repo: { name: 'joebadmo/patchwork' }
                     }
                 }
             , 'no password':
@@ -41,13 +41,14 @@ describe( 'lib/config.js', function(){
                         { username: 'joebadmo'
                         }
                     , user: 'joe'
-                    , repo: 'patchwork'
+                    , repo: { name: 'joebadmo/patchwork' }
                     }
                 }
             };
     });
 
     describe( 'github client configuration', function(){
+
         var mockClient, ghclient; 
 
         beforeEach( function(){
@@ -57,7 +58,7 @@ describe( 'lib/config.js', function(){
                 return client;
             };
 
-            opts.github = { client: mockClient };
+            opts.octonode = { client: mockClient };
         });
 
         it( 'should use given credentials for basic auth', function(){
@@ -85,20 +86,31 @@ describe( 'lib/config.js', function(){
     describe( 'get()', function(){
 
         beforeEach( function(){
-            opts.config = mockConfigs['base'];
+            opts.config = mockConfigs[ 'base' ];
             config = require( confPath )( opts );
         });
 
         it( 'should return the configuration object for the given user and repo', function(){
             var conf = config.get( 'joebadmo', 'patchwork' );
-            conf.should.be.a('object');
-            conf.github.user.should.equal('joebadmo');
-            conf.github.repo.should.equal('patchwork');
+            conf.should.be.a( 'object' );
+            conf.github.user.should.equal( 'joebadmo' );
+            conf.github.repo.should.equal( 'patchwork' );
         })
 
         it( 'should return undefined if no matching conf exists', function(){
-            should.not.exist(config.get( 'joebadmo', 'workpatch' ) );
-            should.not.exist(config.get( 'joegoodmo', 'patchwork' ) );
+            var badRepo, badUser;
+            try {
+                badRepo = config.get( 'joebadmo', 'workpatch' );
+            } catch ( error ) {
+                error.message.should.equal( 'No configuration for user "joebadmo" and repo "workpatch".' );
+            }
+            try {
+                badUser = config.get( 'joegoodmo', 'patchwork' );
+            } catch ( error ) {
+                error.message.should.equal( 'No configuration for user "joegoodmo" and repo "patchwork".' );
+            }
+            should.not.exist( badRepo );
+            should.not.exist( badUser );
         });
     })
 });

@@ -63,21 +63,21 @@ describe( 'lib/config.js', function(){
 
         it( 'should use given credentials for basic auth', function(){
             config = require( confPath )( opts );
-            ghclient = config.getGithubClient( mockConfigs['basic auth'] );
+            ghclient = config.buildGithubClient( mockConfigs['basic auth'] );
             ghclient.username.should.equal( 'badmo' );
             ghclient.password.should.equal( 'Password' );
         });
 
         it( 'should use github user if no username is specified', function(){
             config = require( confPath )( opts );
-            ghclient = config.getGithubClient( mockConfigs['no username'] );
+            ghclient = config.buildGithubClient( mockConfigs['no username'] );
             ghclient.username.should.equal( 'joe' );
             ghclient.password.should.equal( 'Password' );
         });
 
         it( 'should create client without auth if no password is supplied', function(){
             config = require( confPath )( opts );
-            ghclient = config.getGithubClient( mockConfigs['no password'] );
+            ghclient = config.buildGithubClient( mockConfigs['no password'] );
             should.not.exist( ghclient.username );
             should.not.exist( ghclient.password );
         });

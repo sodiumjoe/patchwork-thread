@@ -1,10 +1,10 @@
 var should = require( 'should' )
   , assert = require( 'assert' )
   , sinon = require( 'sinon' )
-  , parse = require( '../lib/parse' )
+  , parse = require( '../lib/parse/helpers' )
   ;
 
-describe( 'lib/parse.js', function(){
+describe( 'lib/parse/helpers.js', function(){
 
     describe( 'parse functions', function(){
 

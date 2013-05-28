@@ -9,12 +9,14 @@
     "octonode": "~0.3.1",
     "pagedown": "~1.1.0",
     "q": "~0.9.3",
-    "underscore": "~1.4.4"
+    "underscore": "~1.4.4",
+    "base64": "~2.0.7"
   },
   "scripts": {
     "start": "node app.js"
   },
   "devDependencies": {
-    "should": "~1.2.2"
+    "should": "~1.2.2",
+    "sinon": "~1.7.2"
   }
 }

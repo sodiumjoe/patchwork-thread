@@ -8,7 +8,7 @@ describe( 'lib/parse/utils.js', function(){
 
     describe( 'parse functions', function(){
 
-        var base64, rawString, yamlObj, yamlString, parsedObj, ghresponse, head, body;
+        var base64, rawString, yamlObj, yamlString, mdString, parsedObj, ghresponse, head, body;
 
         before( function(){
             base64 = 'c29tZSBiYXNlIDY0IHRleHQ=';
@@ -41,16 +41,23 @@ describe( 'lib/parse/utils.js', function(){
         describe( 'parseYaml()', function(){
 
             it( 'should parse yaml', function(){
-                var yaml = parse.parseYaml(yamlString);
+                var yaml = parse.parseYaml( yamlString );
                 yaml.title.should.equal( 'Thread' );
                 yaml.weight.should.equal( 1 );
             });
 
         });
+
+        before( function(){
+            mdString = '### Header 3{#header-3}\n\nThis is a paragraph.';
+        });
             
         describe( 'convertMd()', function(){
            
-            it( 'should convert markdown to html' );
+            it( 'should convert markdown to html', function(){
+                var html = parse.convertMD( mdString );
+                html.should.equal('<h3 id="header-3">Header 3</h3>\n\n<p>This is a paragraph.</p>');
+            });
 
         });
 

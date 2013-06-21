@@ -47,6 +47,18 @@ describe( 'lib/config.js', function(){
             };
     });
 
+    describe( 'no config file', function(){
+        beforeEach( function() {
+            opts.configFilePath = 'something';
+        });
+
+        it( 'should throw an error', function(){
+            should.throws( function(){
+                config = require( confPath )( opts );
+            }, Error );
+        });
+    });
+
     describe( 'github client configuration', function(){
 
         var mockClient, ghclient; 

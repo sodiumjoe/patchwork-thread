@@ -59,6 +59,7 @@ describe( 'lib/config.js', function(){
             };
 
             opts.octonode = { client: mockClient };
+            opts.configFilePath = './config.yml.example';
         });
 
         it( 'should use given credentials for basic auth', function(){

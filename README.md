@@ -37,3 +37,7 @@ Note: The canonical deployment for Patchwork is on [AppFog](http://www.appfog.co
     $ curl patchwork-thread.aws.af.cm/index/all/joebadmo/patchwork
 
 #### 8. Now set up your [Quilt](https://github.com/joebadmo/patchwork-quilt).
+
+### Testing
+
+    $ mocha

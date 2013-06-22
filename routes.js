@@ -1,4 +1,6 @@
-var content = require( './lib/content' );
+var config = require( './lib/config' )()
+  , content = require( './lib/content' )
+  ;
 
 module.exports = function( app ) {
 
@@ -11,7 +13,17 @@ module.exports = function( app ) {
     });
 
     app.get( '/index/:user/:repo', function( req, res ) {
-        content(req, res);
-    });
+        var conf;
 
+        try {
+            conf = config.get( req.params.user, req.params.repo );
+        } catch ( e ) {
+            res.send( 404, e.message );
+        }
+
+        content( conf ).indexAll( function( err ) {
+            if ( err ) { res.send ( 500, err ); }
+            res.send ( 'done' );
+        });
+    });
 };

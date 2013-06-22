@@ -4,7 +4,7 @@
     credentials:
       username: joebadmo                    # defaults to the github user above
       password_env_var: GITHUB_PASSWORD     # used for API call auth (you'll get rate limited with no auth)
-  rootPath: '/'
+  rootPath: '/'                             # default to '/'
   db: joebadmo-patchwork                    # defaults to github.user + '-' + github.repo
   assets: 
     path: assets

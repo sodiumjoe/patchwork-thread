@@ -4,9 +4,7 @@ var express = require( 'express' )
   ;
 
 app.use( express.logger() );
-
 app.configure( function(){
-
     app.use( express.methodOverride() );
     app.use( express.bodyParser() );
     app.use( app.router );

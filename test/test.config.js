@@ -96,6 +96,12 @@ describe( 'lib/config.js', function(){
         });
     });
 
+    describe( 'receivers configuration', function(){
+        it( 'should be tested' );
+        config = require( confPath )();
+        config.buildReceiveFn( rcvConf, receivers );
+    });
+
     describe( 'get()', function(){
 
         beforeEach( function(){

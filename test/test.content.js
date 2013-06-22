@@ -5,5 +5,5 @@ var should = require( 'should' )
   ;
 
 describe( 'lib/content.js', function(){
-
+    it( 'should be tested' );
 });

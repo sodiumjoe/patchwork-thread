@@ -42,6 +42,10 @@ Note: The canonical deployment for Patchwork is on [AppFog](http://www.appfog.co
 
     $ mocha
 
+### Style Guide
+
+I've mostly adhered to [this](https://github.com/rwldrn/idiomatic.js/), except I use [comma-first](https://gist.github.com/isaacs/357981) when it makes sense.
+
 # License
 
 The MIT License (MIT)

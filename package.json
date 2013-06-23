@@ -8,7 +8,6 @@
     "mongoose": "~3.6.11",
     "octonode": "~0.3.1",
     "pagedown": "~1.1.0",
-    "q": "~0.9.3",
     "underscore": "~1.4.4",
     "base64": "~2.0.7"
   },

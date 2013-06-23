@@ -2,6 +2,10 @@ var should = require('should')
   , assert = require('assert')
   ;
 
+// mute logging
+console.error = function(){
+};
+
 describe( 'lib/config/receivers.js', function(){
 
     describe( 'receivers configuration', function(){

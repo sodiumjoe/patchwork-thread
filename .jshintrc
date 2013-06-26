@@ -1,0 +1,6 @@
+{
+    "laxcomma": true,
+    "undef": true,
+    "trailing": true,
+    "node": true
+}

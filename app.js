@@ -1,7 +1,8 @@
 var express = require( 'express' )
   , app = express()
-  , routes = require( './routes' )( app )
   ;
+
+require( './routes' )( app );
 
 app.use( express.logger() );
 app.configure( function(){
